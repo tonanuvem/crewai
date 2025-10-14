@@ -3,7 +3,7 @@
 ## Passo 1: Obter API Key
 
 Acesse: https://makersuite.google.com/app/apikey
-Faça login e copie sua chave (100% gratuito!)
+> Faça login e copie sua chave (100% gratuito!)
 
 ## Passo 2: Instalar
 
