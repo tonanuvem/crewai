@@ -1,0 +1,633 @@
+# =============================================================================
+# REQUIREMENTS.TXT
+# =============================================================================
+
+# Interface
+streamlit>=1.28.0
+
+# Multi-Agent System
+crewai>=0.28.0
+crewai-tools>=0.2.0
+
+# LLM
+langchain-google-genai>=1.0.0
+langchain>=0.1.0
+
+# Leitura de Arquivos
+python-docx>=1.1.0
+PyPDF2>=3.0.0
+pypdf>=3.17.0
+
+# Utilidades
+python-dotenv>=1.0.0
+pandas>=2.0.0
+
+# =============================================================================
+# ESTRUTURA DO PROJETO
+# =============================================================================
+
+projeto/
+│
+├── .env                          # Configurações (NÃO commitar!)
+├── .gitignore                    # Ignorar .env e outros
+├── requirements.txt              # Dependências
+├── README.md                     # Documentação
+│
+├── app_streamlit.py             # ← Interface principal
+├── crew_development.py          # Sistema multi-agente
+├── test_gemini_setup.py         # Script de teste
+│
+├── uploads/                      # Arquivos uploadados (temp)
+├── outputs/                      # Resultados gerados
+│   ├── markdown/
+│   ├── code/
+│   └── reports/
+│
+└── docs/                         # Documentação adicional
+    ├── exemplos/
+    └── templates/
+
+# =============================================================================
+# GUIA DE USO RÁPIDO
+# =============================================================================
+
+## 1. INSTALAÇÃO
+
+### Passo 1: Clone ou baixe o projeto
+git clone seu-repositorio
+cd seu-projeto
+
+### Passo 2: Crie ambiente virtual
+python -m venv venv
+
+# Linux/Mac
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
+
+### Passo 3: Instale dependências
+pip install -r requirements.txt
+
+### Passo 4: Configure API Key
+# Crie arquivo .env
+echo "GOOGLE_API_KEY=sua-chave-aqui" > .env
+
+# Obtenha chave em: https://makersuite.google.com/app/apikey
+
+### Passo 5: Teste a configuração
+python test_gemini_setup.py
+
+### Passo 6: Execute o Streamlit
+streamlit run app_streamlit.py
+
+# =============================================================================
+# COMO USAR A INTERFACE
+# =============================================================================
+
+## Aba 1: INPUT (📄)
+
+### Opção A: Upload de Arquivo
+1. Clique em "Browse files"
+2. Selecione seu arquivo (PDF, Word, TXT)
+3. Aguarde extração do texto
+4. Revise/edite o texto extraído se necessário
+
+### Opção B: Digitação Manual
+1. Digite ou cole a descrição do negócio
+2. Mínimo 50 caracteres
+3. Seja específico sobre processos e regras
+
+### Dicas para melhor resultado:
+- Descreva atores (quem faz o quê)
+- Liste regras de negócio claramente
+- Inclua valores numéricos quando relevante
+- Mencione integrações e notificações
+
+## Aba 2: EXECUÇÃO (🚀)
+
+### Configurações (Sidebar)
+- **Modelo**: 
+  - gemini-1.5-flash (rápido, ótimo para maioria)
+  - gemini-1.5-pro (mais poderoso, análises complexas)
+  
+- **Temperatura**:
+  - 0.0-0.3: Mais determinístico
+  - 0.4-0.7: Balanceado (recomendado)
+  - 0.8-1.0: Mais criativo
+
+### Execução
+1. Certifique-se que o texto está carregado
+2. Clique em "▶️ Iniciar Processamento"
+3. Acompanhe o progresso de cada agente:
+   - 🔍 Domain Analyst (Análise)
+   - 📋 Product Owner (Stories)
+   - 🧪 QA Engineer (BDD)
+   - 💻 Developer (Código)
+   - 🔎 Reviewer (Revisão)
+
+### Duração esperada:
+- Projeto pequeno: 2-5 minutos
+- Projeto médio: 5-15 minutos
+- Projeto grande: 15-30 minutos
+
+## Aba 3: RESULTADOS (📊)
+
+### Visualização
+- Métricas de execução
+- Output completo expandível
+- Seções organizadas por agente
+
+### Downloads disponíveis
+- 📥 Markdown (.md) - Melhor para documentação
+- 📥 Texto (.txt) - Compatibilidade universal
+
+### Limpar resultados
+- Clique em "🗑️ Limpar Resultados" para nova execução
+
+# =============================================================================
+# EXEMPLOS DE ENTRADA
+# =============================================================================
+
+## Exemplo 1: Sistema de Aprovação de Despesas
+
+"""
+Sistema de Aprovação de Despesas Corporativas
+
+Atores:
+- Funcionário
+- Gestor
+- Diretor Financeiro
+- Sistema
+
+Processo:
+1. Funcionário preenche formulário de despesa
+   - Valor
+   - Categoria (alimentação, transporte, hospedagem, outros)
+   - Data da despesa
+   - Justificativa
+   - Anexo de comprovante (obrigatório > R$ 100)
+
+2. Sistema valida dados
+   - Valor entre R$ 10 e R$ 50.000
+   - Data não pode ser futura
+   - Comprovante anexado se valor > R$ 100
+
+3. Roteamento automático:
+   - Até R$ 500: Aprovação automática
+   - R$ 500 - R$ 5.000: Aprovação do Gestor direto
+   - Acima R$ 5.000: Aprovação do Diretor Financeiro
+
+4. Aprovador recebe notificação por email
+
+5. Aprovador analisa e pode:
+   - Aprovar
+   - Rejeitar (com justificativa)
+   - Solicitar informações adicionais
+
+6. Sistema registra histórico completo
+
+Regras de Negócio:
+- Não permitir despesas duplicadas (mesmo CPF, valor e data)
+- Prazo de aprovação: 48h úteis
+- Após 48h sem resposta, escalar para superior
+- Despesas aprovadas são enviadas para sistema de pagamento
+- Funcionário pode cancelar despesa antes da aprovação
+"""
+
+## Exemplo 2: E-commerce - Carrinho de Compras
+
+"""
+Processo de Checkout - E-commerce
+
+Contexto:
+Loja online de eletrônicos precisa de processo de checkout eficiente
+
+Fluxo Principal:
+1. Cliente adiciona produtos ao carrinho
+2. Cliente revisa carrinho (pode alterar quantidades, remover itens)
+3. Cliente inicia checkout
+4. Sistema solicita endereço de entrega
+5. Cliente escolhe forma de entrega:
+   - PAC (5-10 dias)
+   - SEDEX (2-3 dias)
+   - Retirada na loja (mesmo dia)
+6. Cliente escolhe forma de pagamento:
+   - Cartão de crédito (até 12x)
+   - PIX (5% desconto)
+   - Boleto (à vista)
+7. Sistema processa pagamento
+8. Sistema envia confirmação por email
+9. Pedido segue para separação
+
+Regras de Negócio:
+- Estoque reservado por 15 minutos durante checkout
+- Frete grátis acima de R$ 500
+- CEPs inválidos devem ser rejeitados
+- Limite de 10 unidades por produto
+- Cupons de desconto acumulam com desconto PIX
+- Validar se cartão não está expirado
+"""
+
+## Exemplo 3: Sistema de Agendamento Médico
+
+"""
+Agendamento de Consultas Online
+
+Processo:
+1. Paciente acessa sistema de agendamento
+2. Escolhe especialidade médica
+3. Sistema mostra médicos disponíveis
+4. Paciente escolhe médico
+5. Sistema mostra horários livres
+6. Paciente seleciona data/hora
+7. Sistema solicita confirmação
+8. Sistema envia confirmação por email e SMS
+9. Médico recebe notificação
+
+Regras:
+- Consultas com mínimo 24h de antecedência
+- Paciente pode remarcar até 2h antes
+- Cancelamento até 4h antes (sem cobrança)
+- Cancelamento com menos de 4h: cobrança de multa
+- Máximo 3 consultas agendadas por paciente
+- Intervalo de 30min entre consultas do mesmo médico
+- Bloquear horário de almoço (12h-13h)
+- Permitir agendamento apenas em dias úteis
+"""
+
+# =============================================================================
+# TROUBLESHOOTING COMUM
+# =============================================================================
+
+## Problema 1: Erro ao extrair texto do PDF
+Solução:
+- Certifique-se que o PDF não está protegido por senha
+- Tente converter PDF para Word primeiro
+- Verifique se o PDF contém texto (não apenas imagens)
+
+## Problema 2: "API key not valid"
+Solução:
+1. Verifique arquivo .env
+2. Chave deve estar sem espaços: GOOGLE_API_KEY=AIza...
+3. Gere nova chave em: https://makersuite.google.com/app/apikey
+4. Reinicie o Streamlit
+
+## Problema 3: Processamento muito lento
+Solução:
+- Use gemini-1.5-flash em vez de pro
+- Reduza temperatura para 0.5
+- Simplifique a descrição do negócio
+- Divida em múltiplas execuções menores
+
+## Problema 4: "Resource exhausted" (Rate Limit)
+Solução:
+- Aguarde 60 segundos
+- Use gemini-1.5-flash (limite maior: 15/min)
+- Para gemini-1.5-pro: máximo 2 requests/minuto
+
+## Problema 5: Resultado não atende expectativas
+Solução:
+- Seja mais específico na descrição
+- Inclua exemplos concretos
+- Liste regras de negócio explicitamente
+- Aumente temperatura para 0.8-0.9
+- Use gemini-1.5-pro para melhor qualidade
+
+## Problema 6: Erro ao ler arquivo Word
+Solução:
+pip install --upgrade python-docx
+- Certifique-se que é .docx (não .doc)
+- Tente salvar novamente como .docx
+
+# =============================================================================
+# DICAS DE OTIMIZAÇÃO
+# =============================================================================
+
+## Para Resultados Mais Rápidos:
+1. Use gemini-1.5-flash
+2. Temperature = 0.5
+3. Descrições concisas (500-1000 palavras)
+4. Foco em 1-3 features por vez
+
+## Para Melhor Qualidade:
+1. Use gemini-1.5-pro
+2. Temperature = 0.7-0.8
+3. Descrições detalhadas com exemplos
+4. Inclua casos de edge e exceções
+
+## Para Melhor Custo-Benefício:
+1. Use gemini-1.5-flash para primeira versão
+2. Revise resultado
+3. Refine descrição se necessário
+4. Execute novamente com ajustes
+
+# =============================================================================
+# ADVANCED: PERSONALIZAÇÃO
+# =============================================================================
+
+## Adicionar Novos Tipos de Arquivo
+
+No app_streamlit.py, adicione:
+
+```python
+def read_excel_file(file) -> str:
+    """Lê arquivo Excel"""
+    import pandas as pd
+    df = pd.read_excel(file)
+    return df.to_string()
+
+# Adicione no file_uploader:
+uploaded_file = st.file_uploader(
+    "Upload de Documento",
+    type=['pdf', 'docx', 'txt', 'xlsx', 'csv']  # ← adicione aqui
+)
+```
+
+## Customizar Agentes
+
+Edite as descrições dos agentes em create_agents():
+
+```python
+domain_analyst = Agent(
+    role="Analista de Domínio Especialista",
+    goal="SEU OBJETIVO CUSTOMIZADO",
+    backstory="""SUA HISTÓRIA CUSTOMIZADA""",
+    llm=llm,
+    verbose=True
+)
+```
+
+## Adicionar Novos Agentes
+
+```python
+# Exemplo: Agente de Documentação
+documentation_writer = Agent(
+    role="Technical Writer",
+    goal="Criar documentação completa da API",
+    backstory="Expert em documentação técnica...",
+    llm=llm,
+    verbose=True
+)
+
+# Adicione task correspondente
+task_doc = Task(
+    description="Criar documentação README e API docs",
+    agent=documentation_writer,
+    expected_output="Documentação completa",
+    context=[task5]  # Depois da revisão
+)
+```
+
+## Salvar Resultados Automaticamente
+
+Adicione após kickoff():
+
+```python
+# Criar diretório se não existe
+output_dir = Path("outputs")
+output_dir.mkdir(exist_ok=True)
+
+# Salvar resultado
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+with open(output_dir / f"resultado_{timestamp}.md", "w") as f:
+    f.write(str(result))
+```
+
+# =============================================================================
+# DEPLOYMENT (OPCIONAL)
+# =============================================================================
+
+## Opção 1: Streamlit Cloud (GRÁTIS)
+
+1. Suba seu código para GitHub
+2. Acesse: https://streamlit.io/cloud
+3. Conecte seu repositório
+4. Configure secrets (API Keys)
+5. Deploy automático!
+
+## Opção 2: Docker
+
+Crie Dockerfile:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "app_streamlit.py", "--server.port=8501"]
+```
+
+Build e run:
+```bash
+docker build -t bdd-multiagent .
+docker run -p 8501:8501 --env-file .env bdd-multiagent
+```
+
+## Opção 3: Heroku
+
+```bash
+# Criar Procfile
+echo "web: streamlit run app_streamlit.py --server.port=$PORT" > Procfile
+
+# Deploy
+heroku create meu-app-bdd
+git push heroku main
+heroku config:set GOOGLE_API_KEY=sua-chave
+```
+
+# =============================================================================
+# SEGURANÇA E BOAS PRÁTICAS
+# =============================================================================
+
+## .gitignore essencial
+
+```
+# Ambiente
+.env
+venv/
+__pycache__/
+
+# Uploads temporários
+uploads/
+*.pdf
+*.docx
+
+# Outputs
+outputs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+```
+
+## Validação de Input
+
+```python
+# Adicione validações
+if len(business_description) > 50000:
+    st.error("Descrição muito longa! Máximo 50.000 caracteres")
+    st.stop()
+
+if "senha" in business_description.lower():
+    st.warning("Evite incluir informações sensíveis!")
+```
+
+## Rate Limiting
+
+```python
+import time
+
+# Controle de requisições
+if 'last_request' in st.session_state:
+    elapsed = time.time() - st.session_state.last_request
+    if elapsed < 60:  # 1 minuto entre requests
+        st.warning(f"Aguarde {60-elapsed:.0f}s antes da próxima execução")
+        st.stop()
+
+st.session_state.last_request = time.time()
+```
+
+# =============================================================================
+# MÉTRICAS E MONITORAMENTO
+# =============================================================================
+
+## Adicionar Analytics
+
+```python
+import json
+from datetime import datetime
+
+def log_execution(duration, model, success):
+    log_entry = {
+        'timestamp': datetime.now().isoformat(),
+        'duration': duration,
+        'model': model,
+        'success': success
+    }
+    
+    with open('logs/executions.jsonl', 'a') as f:
+        f.write(json.dumps(log_entry) + '\n')
+
+# Use após execução
+log_execution(duration, model_option, True)
+```
+
+## Dashboard de Métricas
+
+```python
+# Nova aba para estatísticas
+with st.tabs(["Input", "Execução", "Resultados", "📊 Stats"]):
+    # ... tabs anteriores ...
+    
+    with tab4:
+        st.header("Estatísticas de Uso")
+        
+        # Ler logs
+        import pandas as pd
+        logs = pd.read_json('logs/executions.jsonl', lines=True)
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Execuções", len(logs))
+        with col2:
+            st.metric("Tempo Médio", f"{logs['duration'].mean():.1f}s")
+        with col3:
+            st.metric("Taxa Sucesso", f"{logs['success'].mean()*100:.1f}%")
+        
+        # Gráfico
+        st.line_chart(logs.set_index('timestamp')['duration'])
+```
+
+# =============================================================================
+# FAQ
+# =============================================================================
+
+Q: Posso usar offline?
+A: Não, Gemini requer conexão com internet.
+
+Q: Qual o custo?
+A: Gemini é gratuito até os limites de uso. Veja limites atuais em:
+   https://ai.google.dev/pricing
+
+Q: Posso usar outros modelos?
+A: Sim! Basta trocar o ChatGoogleGenerativeAI por outro provider
+   (OpenAI, Anthropic, etc)
+
+Q: Os dados são privados?
+A: Dados enviados ao Gemini seguem políticas do Google.
+   Para máxima privacidade, use modelos locais (Ollama).
+
+Q: Posso comercializar?
+A: Sim, respeitando termos de uso do Google Gemini e CrewAI.
+
+Q: Como contribuir?
+A: Abra issues/PRs no GitHub do projeto!
+
+# =============================================================================
+# RECURSOS ADICIONAIS
+# =============================================================================
+
+📚 Documentação:
+- CrewAI: https://docs.crewai.com
+- Streamlit: https://docs.streamlit.io
+- Gemini: https://ai.google.dev/docs
+- LangChain: https://python.langchain.com
+
+🎥 Tutoriais:
+- Domain Storytelling: https://domainstorytelling.org
+- BDD com Gherkin: https://cucumber.io/docs/gherkin
+- Clean Architecture: https://blog.cleancoder.com
+
+💬 Comunidades:
+- CrewAI Discord: https://discord.gg/crewai
+- Streamlit Forum: https://discuss.streamlit.io
+
+# =============================================================================
+# CHANGELOG
+# =============================================================================
+
+v1.0.0 (atual)
+- Interface Streamlit completa
+- Suporte PDF, Word, TXT
+- Integração Gemini 1.5
+- 5 agentes especializados
+- Sistema de download de resultados
+
+Próximas features planejadas:
+- [ ] Suporte Excel/CSV
+- [ ] Múltiplos projetos simultâneos
+- [ ] Templates pré-configurados
+- [ ] Integração com GitHub
+- [ ] Export para Jira/Azure DevOps
+- [ ] Modo colaborativo (múltiplos usuários)
+- [ ] API REST para integração
+
+# =============================================================================
+# SUPORTE
+# =============================================================================
+
+🐛 Encontrou um bug?
+- Abra uma issue no GitHub
+
+💡 Tem uma sugestão?
+- Compartilhe nas discussions
+
+📧 Precisa de ajuda?
+- Verifique FAQ acima
+- Consulte documentação
+- Entre em contato via GitHub
+
+---
+Desenvolvido com ❤️ usando CrewAI + Gemini + Streamlit
