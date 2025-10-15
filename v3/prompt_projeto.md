@@ -99,12 +99,12 @@ flowchart TD
 
 ## 7. Requisitos Técnicos
 
-- **Front-end:** React ou Angular (interface web simples, responsiva)
-- **Back-end:** Node.js ou Python (FastAPI / NestJS)
-- **Banco de Dados:** PostgreSQL ou MySQL
+- **Front-end:** ReactAdmin com Vite (interface web simples, responsiva)
+- **Back-end:** Python (FastAPI)
+- **Banco de Dados:** DynamoDB
 - **Importação de Planilhas:** uso de bibliotecas como `pandas` (Python) ou `xlsx` (Node.js)
 - **Autenticação:** integração com sistema interno do hospital (LDAP ou SSO)
-- **Hospedagem:** servidor interno ou container Docker dentro da infraestrutura hospitalar
+- **Hospedagem:** AWS Lambda ou container Docker dentro da infraestrutura hospitalar
 - **Relatórios:** exportação em Excel, PDF e visualização via dashboard web
 
 ---
