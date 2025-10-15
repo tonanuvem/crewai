@@ -1,4 +1,4 @@
-# 🩺 Projeto: Sistema de Controle e Validação de Procedimentos Médicos Endoscópicos (SISPRIME)
+# 🩺 Projeto: Sistema de Controle e Validação de Procedimentos Médicos e Endoscópicos (SCVPE)
 
 ## 1. Contexto
 A equipe de endoscopistas do hospital realiza diversos procedimentos diariamente, que são registrados internamente por meio de códigos **TUSS** (Terminologia Unificada da Saúde Suplementar).  
@@ -117,13 +117,15 @@ A implementação desta solução proporcionará:
 
 ---
 
-## 9. Próximos Passos
-1. Reunir amostras das planilhas Excel hospitalares;  
-2. Identificar campos críticos (códigos TUSS, valores, datas, convênios);  
-3. Definir modelo de dados preliminar;  
-4. Validar com stakeholders (médicos e equipe administrativa);  
-5. Iniciar prototipagem da solução.
+## 9. Fluxo de Processo (Antes vs Depois)
 
----
-
-> **Observação:** O projeto SisPrime visa garantir que o trabalho médico realizado seja corretamente reconhecido e pago pelos convênios, reduzindo perdas financeiras e melhorando o controle operacional da equipe de endoscopia.
+### 🔴 Situação Atual (Antes da Solução)
+```mermaid
+flowchart TD
+    A[Realização do Procedimento Endoscópico] --> B[Registro Manual (Planilha/Software do Hospital)]
+    B --> C[Envio ao Setor de Faturamento]
+    C --> D[Convênio Médico Analisa]
+    D --> E[Pagamento Parcial ou Glosa]
+    E --> F[Planilha Excel emitida pelo Hospital]
+    F --> G[Conferência Manual pela Equipe]
+    G --> H[Diferenças não rastreadas / Perda Financeira]
