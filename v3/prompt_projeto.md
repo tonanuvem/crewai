@@ -1,4 +1,4 @@
-# 🩺 Projeto: Sistema de Controle e Validação de Procedimentos Endoscópicos (SCVPE)
+# 🩺 Projeto: Sistema de Controle e Validação de Procedimentos Médicos Endoscópicos (SISPRIME)
 
 ## 1. Contexto
 A equipe de endoscopistas do hospital realiza diversos procedimentos diariamente, que são registrados internamente por meio de códigos **TUSS** (Terminologia Unificada da Saúde Suplementar).  
@@ -126,4 +126,4 @@ A implementação desta solução proporcionará:
 
 ---
 
-> **Observação:** O projeto SCVPE visa garantir que o trabalho médico realizado seja corretamente reconhecido e pago pelos convênios, reduzindo perdas financeiras e melhorando o controle operacional da equipe de endoscopia.
+> **Observação:** O projeto SisPrime visa garantir que o trabalho médico realizado seja corretamente reconhecido e pago pelos convênios, reduzindo perdas financeiras e melhorando o controle operacional da equipe de endoscopia.
