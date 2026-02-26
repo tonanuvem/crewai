@@ -8,9 +8,9 @@ Motivação:
 Agentes:
 
 - 1) Analista de Dados Multi Bancos
-- 2) Verificador de Correlação entre Planilha_Hospital e Produtividade_Procedimentos
-- 3) Controlador de Pagamento deve avaliar as transferências aos Médicos Parceiros com base na agenda de execução da Produtividade_Procedimentos, bem como avaliar se os pagamentos cadastrados pela Contadora foram realizados
-- 4) Controlador de Recebimentos para as consultas realizadas junto aos pacientes
+- 2) Verificador de Correlação
+- 3) Controlador de Pagamento
+- 4) Controlador de Recebimentos
 
 Tarefas:
 
