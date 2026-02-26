@@ -74,6 +74,33 @@
     },
     {
       "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_1289",
+      "pickedColor": "black",
+      "number": 14,
+      "waypoints": [
+        {
+          "original": {
+            "x": 186,
+            "y": 712
+          },
+          "x": 186,
+          "y": 674
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 185,
+          "y": 607
+        }
+      ],
+      "source": "shape_8103",
+      "target": "shape_0110"
+    },
+    {
+      "type": "domainStory:activity",
       "name": "extrai",
       "id": "connection_1355",
       "pickedColor": "black",
@@ -99,6 +126,33 @@
       "source": "shape_1290",
       "target": "shape_0074",
       "multipleNumberAllowed": false
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_1662",
+      "pickedColor": "black",
+      "number": 16,
+      "waypoints": [
+        {
+          "original": {
+            "x": 287,
+            "y": 710
+          },
+          "x": 261,
+          "y": 672
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 206,
+          "y": 591
+        }
+      ],
+      "source": "shape_7667",
+      "target": "shape_0110"
     },
     {
       "type": "domainStory:activity",
@@ -183,6 +237,33 @@
       "source": "shape_7047",
       "target": "shape_8863",
       "multipleNumberAllowed": false
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_2604",
+      "pickedColor": "black",
+      "number": 18,
+      "waypoints": [
+        {
+          "original": {
+            "x": 78,
+            "y": 710
+          },
+          "x": 96,
+          "y": 685
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 151,
+          "y": 607
+        }
+      ],
+      "source": "shape_7392",
+      "target": "shape_0110"
     },
     {
       "type": "domainStory:activity",
@@ -432,6 +513,33 @@
       "source": "shape_1290",
       "target": "shape_2816",
       "multipleNumberAllowed": false
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_4420",
+      "pickedColor": "black",
+      "number": 17,
+      "waypoints": [
+        {
+          "original": {
+            "x": 393,
+            "y": 710
+          },
+          "x": 355,
+          "y": 683
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 215,
+          "y": 582
+        }
+      ],
+      "source": "shape_2615",
+      "target": "shape_0110"
     },
     {
       "type": "domainStory:activity",
@@ -980,6 +1088,13 @@
       "y": 114
     },
     {
+      "type": "domainStory:actorPerson",
+      "name": "Controlador de Recebimentos",
+      "id": "shape_2615",
+      "x": 355,
+      "y": 672
+    },
+    {
       "type": "domainStory:actorSystem",
       "name": "BI Self-service com Dashboard e Relatórios",
       "id": "shape_2723",
@@ -1079,6 +1194,20 @@
       "y": 595
     },
     {
+      "type": "domainStory:actorPerson",
+      "name": "Elaborador de Relatórios",
+      "id": "shape_7392",
+      "x": 40,
+      "y": 672
+    },
+    {
+      "type": "domainStory:actorPerson",
+      "name": "Controlador de Pagamentos",
+      "id": "shape_7667",
+      "x": 249,
+      "y": 672
+    },
+    {
       "type": "domainStory:workObjectInfo",
       "name": "Faturas Cartão de Crédito",
       "id": "shape_7720",
@@ -1098,6 +1227,13 @@
       "id": "shape_7992",
       "x": 773,
       "y": 458
+    },
+    {
+      "type": "domainStory:actorPerson",
+      "name": "Verificador de Correlação",
+      "id": "shape_8103",
+      "x": 148,
+      "y": 674
     },
     {
       "type": "domainStory:actorSystem",

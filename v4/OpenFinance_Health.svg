@@ -71,7 +71,27 @@
       m 11,0
       a 11,11 0 1,0 -22,0
       a 11,11 0 1,0 22,0
-      " style="fill: white; stroke: black;"/><text lineHeight="1.2" position="absolute" class="djs-labelNumber" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="-57" y="584.5324023730814">15</tspan></text></g><path d="M-30,574L-154,621" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-159" y="569" rx="4" width="134" height="57" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_4551" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-223,478L-278,478"/></g><path d="M-223,478L-278,478" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-283" y="473" rx="4" width="65" height="10" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_7558" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-223,633L-278,633"/></g><path d="M-223,633L-278,633" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-283" y="628" rx="4" width="65" height="10" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_7810" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-223,520L-297,603"/></g><path d="M-223,520L-297,603" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-302" y="515" rx="4" width="84" height="93" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_9535" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-217,595L-293,504"/></g><path d="M-217,595L-293,504" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-298" y="499" rx="4" width="86" height="101" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_7397" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M354,427L352,522"/><text lineHeight="1.2" wordWrap="break-word" overflowWrap="break-word" hyphens="auto" class="djs-label" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="371.9329972900433" y="459.90201625974">utiliza</tspan></text></g><path d="M354,427L352,522" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="347" y="422" rx="4" width="12" height="105" class="djs-outline" style="fill: none;"/></g></g></svg>
+      " style="fill: white; stroke: black;"/><text lineHeight="1.2" position="absolute" class="djs-labelNumber" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="-57" y="584.5324023730814">15</tspan></text></g><path d="M-30,574L-154,621" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-159" y="569" rx="4" width="134" height="57" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_4551" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-223,478L-278,478"/></g><path d="M-223,478L-278,478" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-283" y="473" rx="4" width="65" height="10" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_7558" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-223,633L-278,633"/></g><path d="M-223,633L-278,633" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-283" y="628" rx="4" width="65" height="10" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_7810" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-223,520L-297,603"/></g><path d="M-223,520L-297,603" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-302" y="515" rx="4" width="84" height="93" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_9535" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M-217,595L-293,504"/></g><path d="M-217,595L-293,504" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-298" y="499" rx="4" width="86" height="101" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_7397" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M354,427L352,522"/><text lineHeight="1.2" wordWrap="break-word" overflowWrap="break-word" hyphens="auto" class="djs-label" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="371.9329972900433" y="459.90201625974">utiliza</tspan></text></g><path d="M354,427L352,522" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="347" y="422" rx="4" width="12" height="105" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_1289" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M186,674L185,607"/><path d="
+      M 185.61995671277035 654
+      m 11,0
+      a 11,11 0 1,0 -22,0
+      a 11,11 0 1,0 22,0
+      " style="fill: white; stroke: black;"/><text lineHeight="1.2" position="absolute" class="djs-labelNumber" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="178.61995671277035" y="658">14</tspan></text></g><path d="M186,674L185,607" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="180" y="602" rx="4" width="11" height="77" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_1662" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M261,672L206,591"/><path d="
+      M 245.8102272116476 652
+      m 11,0
+      a 11,11 0 1,0 -22,0
+      a 11,11 0 1,0 22,0
+      " style="fill: white; stroke: black;"/><text lineHeight="1.2" position="absolute" class="djs-labelNumber" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="238.8102272116476" y="656">16</tspan></text></g><path d="M261,672L206,591" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="201" y="586" rx="4" width="65" height="91" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_4420" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M355,683L215,582"/><path d="
+      M 335 667.0854413745982
+      m 11,0
+      a 11,11 0 1,0 -22,0
+      a 11,11 0 1,0 22,0
+      " style="fill: white; stroke: black;"/><text lineHeight="1.2" position="absolute" class="djs-labelNumber" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="328" y="671.0854413745982">17</tspan></text></g><path d="M355,683L215,582" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="210" y="577" rx="4" width="150" height="111" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-connection" data-element-id="connection_2604" style="display: block;"><g class="djs-visual"><path style="stroke: black; fill: none; stroke-width: 1.5px; stroke-linejoin: round; marker-end: url('#activity-black-black-7bf2fn281rm4a55w290g7f9q0');" d="M96,685L151,607"/><path d="
+      M 107.72958104400132 665
+      m 11,0
+      a 11,11 0 1,0 -22,0
+      a 11,11 0 1,0 22,0
+      " style="fill: white; stroke: black;"/><text lineHeight="1.2" position="absolute" class="djs-labelNumber" style="font-family: Arial, sans-serif; font-size: 11px; font-weight: normal; fill: black;"><tspan x="100.72958104400132" y="669">18</tspan></text></g><path d="M96,685L151,607" class="djs-hit djs-hit-stroke" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="91" y="602" rx="4" width="65" height="88" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-shape" data-element-id="shape_7667" style="display: block;" transform="matrix(1 0 0 1 249 672)"><g class="djs-visual"><svg xmlns="http://www.w3.org/2000/svg" fill=" #000000" viewBox="0 0 24 26" width="75" height="75"><path d="M12 5.9c1.16 0 2.1.94 2.1 2.1s-.94 2.1-2.1 2.1S9.9 9.16 9.9 8s.94-2.1 2.1-2.1m0 9c2.97 0 6.1 1.46 6.1 2.1v1.1H5.9V17c0-.64 3.13-2.1 6.1-2.1M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z"/><path d="M0 0h24v24H0z" fill="none"/></svg><text lineHeight="1.2" class="djs-label" style="font-family: Arial, sans-serif; font-size: 12px; font-weight: normal; fill: rgb(0, 0, 0);"><tspan x="4.7734375" y="75">Controlador </tspan><tspan x="30.5703125" y="89">de </tspan><tspan x="2.5546875" y="103">Pagamentos</tspan></text></g><rect class="djs-hit djs-hit-all" x="0" y="0" width="75" height="75" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-5" y="-5" rx="4" width="85" height="85" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-shape" data-element-id="shape_8103" style="display: block;" transform="matrix(1 0 0 1 148 674)"><g class="djs-visual"><svg xmlns="http://www.w3.org/2000/svg" fill=" #000000" viewBox="0 0 24 26" width="75" height="75"><path d="M12 5.9c1.16 0 2.1.94 2.1 2.1s-.94 2.1-2.1 2.1S9.9 9.16 9.9 8s.94-2.1 2.1-2.1m0 9c2.97 0 6.1 1.46 6.1 2.1v1.1H5.9V17c0-.64 3.13-2.1 6.1-2.1M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z"/><path d="M0 0h24v24H0z" fill="none"/></svg><text lineHeight="1.2" class="djs-label" style="font-family: Arial, sans-serif; font-size: 12px; font-weight: normal; fill: rgb(0, 0, 0);"><tspan x="0" y="75">Verificador de </tspan><tspan x="6.8984375" y="89">Correlação</tspan></text></g><rect class="djs-hit djs-hit-all" x="0" y="0" width="75" height="75" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-5" y="-5" rx="4" width="85" height="85" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-shape" data-element-id="shape_7392" style="display: block;" transform="matrix(1 0 0 1 40 672)"><g class="djs-visual"><svg xmlns="http://www.w3.org/2000/svg" fill=" #000000" viewBox="0 0 24 26" width="75" height="75"><path d="M12 5.9c1.16 0 2.1.94 2.1 2.1s-.94 2.1-2.1 2.1S9.9 9.16 9.9 8s.94-2.1 2.1-2.1m0 9c2.97 0 6.1 1.46 6.1 2.1v1.1H5.9V17c0-.64 3.13-2.1 6.1-2.1M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z"/><path d="M0 0h24v24H0z" fill="none"/></svg><text lineHeight="1.2" class="djs-label" style="font-family: Arial, sans-serif; font-size: 12px; font-weight: normal; fill: rgb(0, 0, 0);"><tspan x="0" y="75">Elaborador de </tspan><tspan x="9.234375" y="89">Relatórios</tspan></text></g><rect class="djs-hit djs-hit-all" x="0" y="0" width="75" height="75" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-5" y="-5" rx="4" width="85" height="85" class="djs-outline" style="fill: none;"/></g></g><g class="djs-group"><g class="djs-element djs-shape selected" data-element-id="shape_2615" style="display: block;" transform="matrix(1 0 0 1 355 672)"><g class="djs-visual"><svg xmlns="http://www.w3.org/2000/svg" fill=" #000000" viewBox="0 0 24 26" width="75" height="75"><path d="M12 5.9c1.16 0 2.1.94 2.1 2.1s-.94 2.1-2.1 2.1S9.9 9.16 9.9 8s.94-2.1 2.1-2.1m0 9c2.97 0 6.1 1.46 6.1 2.1v1.1H5.9V17c0-.64 3.13-2.1 6.1-2.1M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z"/><path d="M0 0h24v24H0z" fill="none"/></svg><text lineHeight="1.2" class="djs-label" style="font-family: Arial, sans-serif; font-size: 12px; font-weight: normal; fill: rgb(0, 0, 0);"><tspan x="4.7734375" y="75">Controlador </tspan><tspan x="30.5703125" y="89">de </tspan><tspan x="0" y="103">Recebimentos</tspan></text></g><rect class="djs-hit djs-hit-all" x="0" y="0" width="75" height="75" style="fill: none; stroke-opacity: 0; stroke: white; stroke-width: 15px;"/><rect x="-5" y="-5" rx="4" width="85" height="85" class="djs-outline" style="fill: none;"/></g></g></svg>
 <!-- <DST>
 {
   "domain": {
@@ -149,6 +169,33 @@
     },
     {
       "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_1289",
+      "pickedColor": "black",
+      "number": 14,
+      "waypoints": [
+        {
+          "original": {
+            "x": 186,
+            "y": 712
+          },
+          "x": 186,
+          "y": 674
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 185,
+          "y": 607
+        }
+      ],
+      "source": "shape_8103",
+      "target": "shape_0110"
+    },
+    {
+      "type": "domainStory:activity",
       "name": "extrai",
       "id": "connection_1355",
       "pickedColor": "black",
@@ -174,6 +221,33 @@
       "source": "shape_1290",
       "target": "shape_0074",
       "multipleNumberAllowed": false
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_1662",
+      "pickedColor": "black",
+      "number": 16,
+      "waypoints": [
+        {
+          "original": {
+            "x": 287,
+            "y": 710
+          },
+          "x": 261,
+          "y": 672
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 206,
+          "y": 591
+        }
+      ],
+      "source": "shape_7667",
+      "target": "shape_0110"
     },
     {
       "type": "domainStory:activity",
@@ -258,6 +332,33 @@
       "source": "shape_7047",
       "target": "shape_8863",
       "multipleNumberAllowed": false
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_2604",
+      "pickedColor": "black",
+      "number": 18,
+      "waypoints": [
+        {
+          "original": {
+            "x": 78,
+            "y": 710
+          },
+          "x": 96,
+          "y": 685
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 151,
+          "y": 607
+        }
+      ],
+      "source": "shape_7392",
+      "target": "shape_0110"
     },
     {
       "type": "domainStory:activity",
@@ -507,6 +608,33 @@
       "source": "shape_1290",
       "target": "shape_2816",
       "multipleNumberAllowed": false
+    },
+    {
+      "type": "domainStory:activity",
+      "name": "",
+      "id": "connection_4420",
+      "pickedColor": "black",
+      "number": 17,
+      "waypoints": [
+        {
+          "original": {
+            "x": 393,
+            "y": 710
+          },
+          "x": 355,
+          "y": 683
+        },
+        {
+          "original": {
+            "x": 185,
+            "y": 560
+          },
+          "x": 215,
+          "y": 582
+        }
+      ],
+      "source": "shape_2615",
+      "target": "shape_0110"
     },
     {
       "type": "domainStory:activity",
@@ -1055,6 +1183,13 @@
       "y": 114
     },
     {
+      "type": "domainStory:actorPerson",
+      "name": "Controlador de Recebimentos",
+      "id": "shape_2615",
+      "x": 355,
+      "y": 672
+    },
+    {
       "type": "domainStory:actorSystem",
       "name": "BI Self-service com Dashboard e Relatórios",
       "id": "shape_2723",
@@ -1154,6 +1289,20 @@
       "y": 595
     },
     {
+      "type": "domainStory:actorPerson",
+      "name": "Elaborador de Relatórios",
+      "id": "shape_7392",
+      "x": 40,
+      "y": 672
+    },
+    {
+      "type": "domainStory:actorPerson",
+      "name": "Controlador de Pagamentos",
+      "id": "shape_7667",
+      "x": 249,
+      "y": 672
+    },
+    {
       "type": "domainStory:workObjectInfo",
       "name": "Faturas Cartão de Crédito",
       "id": "shape_7720",
@@ -1173,6 +1322,13 @@
       "id": "shape_7992",
       "x": 773,
       "y": 458
+    },
+    {
+      "type": "domainStory:actorPerson",
+      "name": "Verificador de Correlação",
+      "id": "shape_8103",
+      "x": 148,
+      "y": 674
     },
     {
       "type": "domainStory:actorSystem",
