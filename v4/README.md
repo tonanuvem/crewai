@@ -1,4 +1,4 @@
-# openfinance
+# openfinance - Sistema Multi Agentes - SISPRIME
 
 Exemplo Prático de PROJECT BASED LEARNING
 
