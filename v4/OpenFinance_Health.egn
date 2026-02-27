@@ -74,10 +74,10 @@
     },
     {
       "type": "domainStory:activity",
-      "name": "",
+      "name": " ",
       "id": "connection_1289",
       "pickedColor": "black",
-      "number": 14,
+      "number": 15,
       "waypoints": [
         {
           "original": {
@@ -97,7 +97,8 @@
         }
       ],
       "source": "shape_8103",
-      "target": "shape_0110"
+      "target": "shape_0110",
+      "multipleNumberAllowed": false
     },
     {
       "type": "domainStory:activity",
@@ -187,7 +188,7 @@
       "name": "geram",
       "id": "connection_2107",
       "pickedColor": "black",
-      "number": 15,
+      "number": 14,
       "waypoints": [
         {
           "original": {
@@ -320,7 +321,7 @@
     },
     {
       "type": "domainStory:activity",
-      "name": "obtém",
+      "name": "verifica",
       "id": "connection_3436",
       "pickedColor": "black",
       "number": 7,
@@ -1103,7 +1104,7 @@
     },
     {
       "type": "domainStory:workObjectInfo",
-      "name": "Pagamentos (Contadora)",
+      "name": "Pagamentos a realizar (Contadora)",
       "id": "shape_2816",
       "x": 170,
       "y": 235
@@ -1128,14 +1129,14 @@
     },
     {
       "type": "domainStory:workObjectInfo",
-      "name": "Consultas (Feegow)",
+      "name": "Consultas (Feegow x Planilha MEF)",
       "id": "shape_3963",
       "x": 170,
       "y": 114
     },
     {
       "type": "domainStory:workObjectInfo",
-      "name": "Agenda de Plantões",
+      "name": "Agenda de Plantões (Planilha escalas)",
       "id": "shape_5637",
       "x": 170,
       "y": 352
@@ -1244,7 +1245,7 @@
     },
     {
       "type": "domainStory:workObjectInfo",
-      "name": "Endoscopias (Hospital)",
+      "name": "Endoscopias (Hospital x Planilha Producao)",
       "id": "shape_8600",
       "x": 170,
       "y": 10
