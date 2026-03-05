@@ -17,6 +17,8 @@ RUN pip install --no-cache-dir \
     langchain-google-genai \
     python-dotenv \
     python-docx \
+    openpyxl \
+    pandas \
     pypdf
 
 # Copy application
