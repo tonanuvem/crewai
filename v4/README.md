@@ -29,7 +29,7 @@ Visualizar arquivos MD:
 
 ## Domain Story Telling:
 
-![alt text](OpenFinance_Health.svg)
+![alt text](projeto/OpenFinance_Health.svg)
 
 ## Projeto da Solução:
 
