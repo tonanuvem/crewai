@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir \
     langchain-google-genai \
     python-dotenv \
     python-docx \
-    PyPDF2
+    pypdf
 
 # Copy application
 COPY app.py .
