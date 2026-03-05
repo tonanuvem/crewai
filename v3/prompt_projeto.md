@@ -102,9 +102,9 @@ flowchart TD
 - **Front-end:** ReactAdmin com Vite (interface web simples, responsiva)
 - **Back-end:** Python (FastAPI)
 - **Banco de Dados:** DynamoDB
-- **Importação de Planilhas:** uso de bibliotecas como `pandas` (Python) ou `xlsx` (Node.js)
+- **Importação de Planilhas:** uso de bibliotecas como `pandas` (Python) a partir de `xlsx` ou `csv`
 - **Autenticação:** integração com sistema interno do hospital (LDAP ou SSO)
-- **Hospedagem:** AWS Lambda ou container Docker dentro da infraestrutura hospitalar
+- **Hospedagem:** AWS Lambda ou container Docker dentro da infraestrutura AWS
 - **Relatórios:** exportação em Excel, PDF e visualização via dashboard web
 
 ---
