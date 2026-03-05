@@ -1,7 +1,7 @@
 #!/bin/bash
 
-IMAGE="tonanuvem/sisprime-multi-banco-app"
-CONTAINER="sisprime-multi-banco-agent-app"
+IMAGE="tonanuvem/sisprime-multi-endodscopia-app"
+CONTAINER="sisprime-multi-endodscopia-agent-app"
 PORTA="8802"
 
 echo "Building Docker image with direct pip install..."
