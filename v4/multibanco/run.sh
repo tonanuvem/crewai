@@ -18,4 +18,4 @@ docker run -d \
   -v $(pwd)/outputs:/app/outputs \
   $IMAGE
 
-echo "Running... porta: 8801"
+echo "Running... porta: $PORTA"
