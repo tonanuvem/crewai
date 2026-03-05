@@ -4,7 +4,7 @@
 
 # 2. Instalar dependências
 
-> pip install streamlit crewai crewai-tools langchain-google-genai python-dotenv python-docx PyPDF2
+> pip install streamlit crewai crewai-tools langchain-google-genai python-dotenv python-docx pypdf
 
 # 3. Criar .env
 
