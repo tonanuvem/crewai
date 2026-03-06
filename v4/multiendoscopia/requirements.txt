@@ -1,10 +1,9 @@
 # requirements.txt (gere com: pip freeze > requirements.txt)
-streamlit==1.45.1
-crewai==0.121.0
-crewai-tools==0.45.0
-langchain-google-genai==2.1.4
-python-dotenv==1.1.0
-python-docx==1.1.2
+streamlit==1.55.0
+crewai==1.10.1
+crewai-tools==1.10.1
+python-dotenv==1.1.1
+python-docx==1.2.0
 openpyxl==3.1.5
-pandas==2.2.3
-pypdf==5.4.0
+pandas==2.3.3
+pypdf==6.7.5
