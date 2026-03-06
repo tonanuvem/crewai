@@ -34,16 +34,34 @@ from crewai import Agent, Task, Crew, Process, LLM
 
 load_dotenv()
 
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
+# Tenta criar o diretório de logs em locais com permissão de escrita.
+# Fallback para /tmp caso o diretório da aplicação seja somente leitura
+# (ex: Streamlit Cloud, Docker, Heroku).
+def _resolve_log_path() -> Path:
+    candidates = [Path("logs"), Path("/tmp/endoscopia_logs")]
+    for candidate in candidates:
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            test_file = candidate / ".write_test"
+            test_file.touch()
+            test_file.unlink()
+            return candidate
+        except OSError:
+            continue
+    return Path("/tmp")
+
+log_dir = _resolve_log_path()
+
+_log_handlers: list[logging.Handler] = [logging.StreamHandler()]
+try:
+    _log_handlers.insert(0, logging.FileHandler(log_dir / "crew_logs.log", encoding="utf-8"))
+except OSError:
+    pass  # Sem acesso a arquivo — apenas console
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(log_dir / "crew_logs.log"),
-        logging.StreamHandler(),
-    ],
+    handlers=_log_handlers,
     force=True,
 )
 logger = logging.getLogger(__name__)
@@ -216,11 +234,14 @@ def get_llm(model_choice: str, custom_model: str, temperature: float, api_key: s
 # CRIAÇÃO DOS AGENTES
 # =============================================================================
 
-def create_agents(llm) -> list:
+def create_agents(llm, verbose_mode: bool = False) -> list:
     """Cria o agente analista de endoscopia."""
     multiendoscopia_analista = Agent(
         role="Analista de Controle dos procedimentos de Endoscopia",
-        goal="""Identificar o tipo do arquivo recebido (PRODUCAO ou REPASSE) e extrair
+        goal="""IDIOMA: Todo o seu raciocínio e respostas devem ser escritos EXCLUSIVAMENTE
+em português brasileiro. Nunca use inglês, nem mesmo no campo "Thought" ou "Final Answer".
+
+Identificar o tipo do arquivo recebido (PRODUCAO ou REPASSE) e extrair
 TODAS as linhas de dados, estruturando-as em CSV padronizado para confronto posterior.
 
 == ARQUIVO PRODUCAO (planilha da equipe de enfermagem) ==
@@ -274,17 +295,20 @@ paciente/procedimento, portanto não usa esse campo como chave única.
 Seu principal objetivo é estruturar os dados com máxima fidelidade para que o agente
 correlacionador consiga fazer o batimento correto.""",
         llm=llm,
-        verbose=True,
+        verbose=verbose_mode,
         allow_delegation=False,
     )
     return [multiendoscopia_analista]
 
 
-def create_correlator_agent(llm) -> Agent:
+def create_correlator_agent(llm, verbose_mode: bool = False) -> Agent:
     """Cria o agente correlacionador dos registros de endoscopia."""
     return Agent(
         role="Correlacionador dos registros de endoscopia",
-        goal="""Receber os CSVs padronizados gerados pelo Analista — um do tipo PRODUCAO
+        goal="""IDIOMA: Todo o seu raciocínio e respostas devem ser escritos EXCLUSIVAMENTE
+em português brasileiro. Nunca use inglês, nem mesmo no campo "Thought" ou "Final Answer".
+
+Receber os CSVs padronizados gerados pelo Analista — um do tipo PRODUCAO
 e outro do tipo REPASSE — e realizar o Batimento Automático linha a linha.
 
 == CHAVE DE CORRELAÇÃO ==
@@ -330,7 +354,7 @@ comuns e usa correspondência semântica para não perder correlações válidas
 Nunca inventa procedimentos — apenas padroniza, correlaciona e sinaliza divergências.
 Seu trabalho alimenta diretamente a cobrança estruturada junto ao hospital e convênios.""",
         llm=llm,
-        verbose=True,
+        verbose=verbose_mode,
         allow_delegation=False,
     )
 
@@ -342,7 +366,9 @@ def create_correlation_task(correlator_agent: Agent, csvs_por_arquivo: dict) -> 
         for fname, csv_text in csvs_por_arquivo.items()
     )
     return Task(
-        description=f"""Você recebeu os seguintes blocos CSV padronizados pelo Analista de Endoscopia,
+        description=f"""IDIOMA: Responda EXCLUSIVAMENTE em português brasileiro. Nunca use inglês.
+
+Você recebeu os seguintes blocos CSV padronizados pelo Analista de Endoscopia,
 identificados como PRODUCAO e REPASSE. Execute o batimento automático conforme as regras
 do seu objetivo (goal), usando chave composta de Data + Paciente + Procedimento.
 
@@ -422,7 +448,9 @@ def texto_para_dataframe(csv_texto: str) -> pd.DataFrame | None:
 def create_tasks(agents: list, conteudo_arquivo: str) -> list:
     """Cria as tasks encadeadas para análise de um arquivo de endoscopia."""
     task_analise = Task(
-        description=f"""Analise o arquivo de endoscopia abaixo e identifique se é do tipo
+        description=f"""IDIOMA: Responda EXCLUSIVAMENTE em português brasileiro. Nunca use inglês.
+
+Analise o arquivo de endoscopia abaixo e identifique se é do tipo
 PRODUCAO (planilha da equipe de enfermagem) ou REPASSE (emitido pelo hospital).
 
 === CONTEÚDO DO ARQUIVO ===
@@ -515,9 +543,9 @@ def main():
         st.divider()
 
         custom_model = st.text_input(
-            "Modelo custom (opcional)",
-            value="gemini/gemini-2.5-flash",
-            help="Exemplos: gemini/gemini-2.5-flash-lite ou gemini/gemini-2.5-pro",
+            "🤖 Modelo Gemini",
+            value="gemini/gemini-2.5-flash-lite",
+            help="Exemplos: gemini/gemini-2.5-flash-lite, gemini/gemini-2.5-flash, gemini/gemini-2.5-pro",
         )
         temperature = st.slider(
             "🌡️ Temperatura",
@@ -526,6 +554,13 @@ def main():
             value=0.1,
             step=0.1,
             help="0 = determinístico | 1 = criativo",
+        )
+
+        verbose_mode = st.toggle(
+            "🔊 Modo Verbose",
+            value=False,
+            help="Ativado: exibe o raciocínio detalhado dos agentes (mais tokens). "
+                 "Desativado: apenas o resultado final (mais econômico).",
         )
 
         st.divider()
@@ -623,7 +658,7 @@ def main():
 
         if st.button("🚀 Iniciar Análise", type="primary"):
             llm = get_llm("gemini/gemini-2.5-flash", custom_model, temperature, api_key)
-            agents = create_agents(llm)
+            agents = create_agents(llm, verbose_mode)
             resultados = {}
 
             progress_bar = st.progress(0, text="Aguardando início...")
@@ -663,7 +698,7 @@ def main():
                                 agents=agents,
                                 tasks=tasks,
                                 process=Process.sequential,
-                                verbose=True,
+                                verbose=verbose_mode,
                             )
                             result_holder["value"] = str(crew.kickoff())
                         except Exception as exc:
@@ -778,13 +813,13 @@ def main():
                             llm_corr = get_llm(
                                 "gemini/gemini-2.5-flash", custom_model, temperature, api_key
                             )
-                            correlator = create_correlator_agent(llm_corr)
+                            correlator = create_correlator_agent(llm_corr, verbose_mode)
                             task_corr = create_correlation_task(correlator, csvs_brutos)
                             crew_corr = Crew(
                                 agents=[correlator],
                                 tasks=[task_corr],
                                 process=Process.sequential,
-                                verbose=True,
+                                verbose=verbose_mode,
                             )
                             result_holder["value"] = str(crew_corr.kickoff())
                         except Exception as exc:
@@ -836,21 +871,21 @@ def main():
                 df_final = texto_para_dataframe(csv_dados_str)
 
                 if df_final is not None and not df_final.empty:
-                    # Métricas rápidas
+                    # Métricas rápidas — prefixos alinhados com os StatusCorrelacao do agente
                     col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
                     total_linhas = len(df_final)
 
                     status_col = df_final.get("StatusCorrelacao", pd.Series(dtype=str))
                     n_correlacionado = (status_col.str.upper() == "CORRELACIONADO").sum()
-                    n_divergencia = status_col.str.upper().str.startswith("DIVERGENCIA").sum()
-                    n_glosa = status_col.str.upper().str.startswith("GLOSA").sum()
-                    n_nao_faturado = (status_col.str.upper() == "NAO_FATURADO").sum()
+                    n_divergencia    = status_col.str.upper().str.contains("DIVERGENCIA_VALOR").sum()
+                    n_glosa          = status_col.str.upper().str.contains("GLOSA").sum()
+                    n_nao_faturado   = (status_col.str.upper() == "NAO_FATURADO_NO_REPASSE").sum()
 
-                    col_m1.metric("📄 Total de Linhas", total_linhas)
-                    col_m2.metric("✅ Correlacionados", n_correlacionado)
-                    col_m3.metric("⚠️ Divergências de Valor", int(n_divergencia))
-                    col_m4.metric("🚫 Glosas", int(n_glosa))
-                    col_m5.metric("❌ Não Faturados", int(n_nao_faturado))
+                    col_m1.metric("📄 Total de Linhas",       total_linhas)
+                    col_m2.metric("✅ Correlacionados",        n_correlacionado)
+                    col_m3.metric("⚠️ Divergências de Valor",  int(n_divergencia))
+                    col_m4.metric("🚫 Glosas",                 int(n_glosa))
+                    col_m5.metric("❌ Não Faturados",           int(n_nao_faturado))
 
                     # Filtros interativos
                     with st.expander("🔍 Filtros", expanded=False):
@@ -884,13 +919,15 @@ def main():
                     def highlight_status(row):
                         status = str(row.get("StatusCorrelacao", "")).upper()
                         if status == "CORRELACIONADO":
-                            return ["background-color: #d4edda"] * len(row)
-                        elif status.startswith("DIVERGENCIA"):
-                            return ["background-color: #fff3cd"] * len(row)
-                        elif status.startswith("GLOSA"):
-                            return ["background-color: #f8d7da"] * len(row)
-                        elif status == "NAO_FATURADO":
-                            return ["background-color: #f8d7da"] * len(row)
+                            return ["background-color: #d4edda"] * len(row)   # verde
+                        elif "DIVERGENCIA" in status:
+                            return ["background-color: #fff3cd"] * len(row)   # amarelo
+                        elif "GLOSA" in status:
+                            return ["background-color: #f8d7da"] * len(row)   # vermelho claro
+                        elif "NAO_FATURADO" in status:
+                            return ["background-color: #f8d7da"] * len(row)   # vermelho claro
+                        elif "NAO_IDENTIFICADO" in status:
+                            return ["background-color: #e2e3e5"] * len(row)   # cinza
                         return [""] * len(row)
 
                     st.dataframe(
