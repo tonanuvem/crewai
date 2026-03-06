@@ -2,6 +2,8 @@
 streamlit==1.55.0
 crewai==1.10.1
 crewai-tools==1.10.1
+crewai[google-genai]
+litellm>=1.0.0
 python-dotenv==1.1.1
 python-docx==1.2.0
 openpyxl==3.1.5
