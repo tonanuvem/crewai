@@ -1,4 +1,4 @@
-""" app-endoscopia-v1
+""" app-endoscopia-v3
 Interface Streamlit para Sistema de Controle de Procedimentos de Endoscopia
 
 Instalar:
@@ -34,9 +34,6 @@ from crewai import Agent, Task, Crew, Process, LLM
 
 load_dotenv()
 
-# Tenta criar o diretório de logs em locais com permissão de escrita.
-# Fallback para /tmp caso o diretório da aplicação seja somente leitura
-# (ex: Streamlit Cloud, Docker, Heroku).
 def _resolve_log_path() -> Path:
     candidates = [Path("logs"), Path("/tmp/endoscopia_logs")]
     for candidate in candidates:
@@ -56,7 +53,7 @@ _log_handlers: list[logging.Handler] = [logging.StreamHandler()]
 try:
     _log_handlers.insert(0, logging.FileHandler(log_dir / "crew_logs.log", encoding="utf-8"))
 except OSError:
-    pass  # Sem acesso a arquivo — apenas console
+    pass
 
 logging.basicConfig(
     level=logging.INFO,
@@ -68,16 +65,111 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# VALORES PADRÃO DOS AGENTES E TASKS
+# =============================================================================
+
+ANALISTA_DEFAULTS = {
+    "role": "Analista de Controle dos procedimentos de Endoscopia",
+    "goal": """
+- Retornar APENAS o CSV puro, sem markdown, sem explicações.
+- Primeira linha obrigatoriamente o cabeçalho:
+- Padronizar Data para DD/MM/AAAA.
+- Padronizar nomes de paciente em MAIÚSCULAS sem espaços extras.
+- Identificar o tipo pelo nome da planilha: PRODUCAO ou REPASSE
+
+- Cada exame realizado gera UMA linha no CSV de saída.
+- Se houver PROCEDIMENTOS ADICIONAIS preenchidos na planilha PRODUCAO, gerar uma linha EXTRA para cada procedimento adicional listado (ex: "TESTE DE UREASE" vira linha separada).
+- Coluna TipoArquivo = "PRODUCAO" ou "REPASSE".
+""",
+    "backstory": """
+Expert em análise de faturamento hospitalar e auditoria de convênios médicos.
+Especializado na Terminologia Unificada da Saúde Suplementar (TUSS) e nas regras de
+faturamento dos principais convênios do Brasil.
+Conhece em profundidade os campos das planilhas de produtividade de equipes de enfermagem
+e os arquivos de repasse hospitalares (formato Hospital São Camilo e similares).
+Sabe que o número de atendimento pode divergir entre os dois arquivos para o mesmo
+paciente/procedimento, portanto não usa esse campo como chave única.
+Seu principal objetivo é estruturar os dados com máxima fidelidade para que o agente
+correlacionador consiga fazer o batimento correto.
+    """,
+    "task_description_template": """
+Retorne APENAS o CSV puro, sem markdown, sem explicações.
+Cabeçalho obrigatório na primeira linha
+Não omita nenhuma linha — cada procedimento registrado deve constar no CSV gerado.
+=== CONTEÚDO DO ARQUIVO ===
+{conteudo_arquivo}
+    """,
+    "task_expected_output": (
+        "CSV puro com cabeçalho na primeira linha, todas as linhas do arquivo estruturadas e coluna TipoArquivo preenchida com PRODUCAO ou REPASSE."
+    ),
+}
+
+CORRELACIONADOR_DEFAULTS = {
+    "role": "Correlacionador dos registros de endoscopia",
+    "goal": """
+Receber os CSVs padronizados gerados pelo Analista — um do tipo PRODUCAO e outro do tipo REPASSE — e realizar o Batimento Automático linha a linha, considerando as seguintes regras:
+
+- A primeira linha deve ser obrigatoriamente o cabeçalho, indicando de qual planilha veio aquela coluna (acrescentar sufixo _PRODUCAO ou _REPASSE)
+- NÃO remover nenhuma linha da PRODUCAO; Ordenar por Data crescente; Padronizar Data para DD/MM/AAAA.
+- Padronizar ValorLiberado: ponto decimal, sem símbolo de moeda. 
+
+- A saída do CSV_CORRELACAO deve conter todas as linhas do CSV de PRODUÇÃO como a base da sua resposta, onde devem ser incluídas as novas colunas com o relacionamento do CSV de REPASSE, sendo que para cada linha da PRODUCAO, deve tentar encontrar correspondência no REPASSE usando a chave composta com 3 campos (data + paciente + procedimento). Devem ser incluídas em cada linha somente as colunas do CSV de REPASSE que ainda não exista no CSV de PRODUÇÃO, e também deve ser incluída uma nova coluna de StatusCorrelacao, considerando a seguinte regra:
+   a. Se ValorLiberado coincidir (ou REPASSE não tiver valor): StatusCorrelacao = "CORRELACIONADO"
+   b. Se ValorLiberado for menor no REPASSE: StatusCorrelacao = "CORRELACIONADO_COM_DIVERGENCIA_VALOR"
+   c. Se ValorLiberado = 0 no REPASSE: StatusCorrelacao = "CORRELACIONADO_COM_GLOSA_TOTAL"
+   d. Se ValorLiberado > 0 mas menor que esperado: StatusCorrelacao = "CORRELACIONADO_COM_GLOSA_PARCIAL"
+   e. Se NÃO encontrar correspondência no REPASSE: StatusCorrelacao = "NAO_FATURADO_NO_REPASSE"
+
+- Para linhas do REPASSE sem correspondência na PRODUCAO, inserir no final do arquivo CSV_CORRELACAO as linhas como valores zerados do PRODUCAO e os valores existentes da PRODUÇÃO, e com nova coluna StatusCorrelacao = "REPASSE_NAO_IDENTIFICADO_NA_PRODUCAO"
+
+- Para fazer esse relacionamento, deve-se usar a chave de correlação COMPOSTA pelos 3 campos a seguir:
+  1. Data (DD/MM/AAAA) — tolerância de ± 1 dia para o mesmo episódio
+  2. Paciente (nome normalizado em maiúsculas)
+  3. Procedimento (correspondência semântica: "COLONOSCOPIA" bate com "Colonoscopia (Inclui A Retossigmoidoscopia)", "TESTE DE UREASE" bate com "Pesquisa de H. pylori - Teste da Urease", etc.)
+    """,
+    "backstory": """
+Especialista em auditoria de faturamento médico, ETL e reconciliação de dados hospitalares.
+Usa correspondência semântica para não perder correlações válidas.
+Nunca inventa procedimentos — apenas padroniza, correlaciona e sinaliza divergências.
+Seu trabalho alimenta diretamente a cobrança estruturada junto ao hospital e convênios.
+    """,
+    "task_description_template": """
+Você recebeu os seguintes blocos CSV padronizados pelo Analista de Endoscopia, identificados como PRODUCAO e REPASSE. Execute o batimento automático conforme as regras do seu objetivo (goal), usando chave composta de Data + Paciente + Procedimento.
+- Retorne APENAS o CSV correlacionado
+- A primeira linha deve ser obrigatoriamente o cabeçalho
+=== CONTEÚDO ===
+{blocos}
+    """,
+    "task_expected_output": (
+        "CSV puro com cabeçalho na primeira linha, todas as linhas da PRODUCAO como base, colunas complementares do REPASSE adicionadas e coluna StatusCorrelacao preenchida em cada linha."
+    ),
+}
+
+
+def _init_agent_session_state():
+    """
+    Inicializa o session_state com os valores padrão dos agentes,
+    caso ainda não existam (chamado uma vez no início do main).
+    """
+    if "analista_cfg" not in st.session_state:
+        st.session_state["analista_cfg"] = dict(ANALISTA_DEFAULTS)
+    if "correlacionador_cfg" not in st.session_state:
+        st.session_state["correlacionador_cfg"] = dict(CORRELACIONADOR_DEFAULTS)
+
+
+def _get_analista_cfg() -> dict:
+    return st.session_state.get("analista_cfg", ANALISTA_DEFAULTS)
+
+
+def _get_correlacionador_cfg() -> dict:
+    return st.session_state.get("correlacionador_cfg", CORRELACIONADOR_DEFAULTS)
+
+
+# =============================================================================
 # HANDLER DE LOG EM TEMPO REAL PARA O STREAMLIT
 # =============================================================================
 
 class StreamlitLogHandler(logging.Handler):
-    """
-    Handler de logging que empurra cada registro para uma fila thread-safe.
-    A thread principal do Streamlit consome essa fila e renderiza os logs
-    na interface em tempo real enquanto o CrewAI processa em background.
-    """
-
     def __init__(self, log_queue: queue.Queue):
         super().__init__()
         self.log_queue = log_queue
@@ -90,9 +182,7 @@ class StreamlitLogHandler(logging.Handler):
 
 
 def render_log_line(line: str, container) -> None:
-    """Renderiza uma linha de log com ícone e cor de acordo com o conteúdo."""
     line_lower = line.lower()
-
     if any(k in line_lower for k in ("error", "erro", "exception", "traceback")):
         container.error(f"🔴 {line}")
     elif any(k in line_lower for k in ("warning", "warn", "aviso")):
@@ -114,7 +204,6 @@ def render_log_line(line: str, container) -> None:
 # =============================================================================
 
 def read_word_file(file) -> str:
-    """Lê arquivo Word (.docx)."""
     try:
         doc = Document(file)
         text = [p.text for p in doc.paragraphs if p.text.strip()]
@@ -125,7 +214,6 @@ def read_word_file(file) -> str:
 
 
 def read_pdf_file(file) -> str:
-    """Lê arquivo PDF."""
     try:
         pdf_reader = PdfReader(file)
         text = [
@@ -140,7 +228,6 @@ def read_pdf_file(file) -> str:
 
 
 def read_text_file(file) -> str:
-    """Lê arquivo de texto (.txt e .csv)."""
     try:
         file.seek(0)
         raw = file.read()
@@ -153,11 +240,6 @@ def read_text_file(file) -> str:
 
 
 def read_excel_file(file) -> str:
-    """
-    Lê arquivo Excel (.xlsx ou .xls) e converte para texto CSV.
-    Cada aba do workbook é convertida em um bloco separado.
-    Retorna o conteúdo como string CSV multi-aba.
-    """
     try:
         file.seek(0)
         xls = pd.ExcelFile(file, engine="openpyxl")
@@ -165,7 +247,6 @@ def read_excel_file(file) -> str:
         for sheet_name in xls.sheet_names:
             df = xls.parse(sheet_name, dtype=str)
             df.fillna("", inplace=True)
-            # Remove colunas e linhas totalmente vazias
             df.dropna(axis=1, how="all", inplace=True)
             df.dropna(axis=0, how="all", inplace=True)
             if df.empty:
@@ -182,13 +263,10 @@ def read_excel_file(file) -> str:
 
 
 def extract_text_from_file(uploaded_file) -> str:
-    """Extrai texto de diferentes tipos de arquivo, incluindo Excel."""
     if uploaded_file is None:
         return None
-
     extension = uploaded_file.name.rsplit(".", 1)[-1].lower()
     uploaded_file.seek(0)
-
     readers = {
         "docx": read_word_file,
         "pdf": read_pdf_file,
@@ -197,103 +275,47 @@ def extract_text_from_file(uploaded_file) -> str:
         "xlsx": read_excel_file,
         "xls": read_excel_file,
     }
-
     reader = readers.get(extension)
     if reader:
         return reader(uploaded_file)
-
     st.error(f"Formato de arquivo não suportado: .{extension}")
     return None
 
 
 # =============================================================================
-# CONFIGURAÇÃO DO LLM (compatível CrewAI / LiteLLM)
+# CONFIGURAÇÃO DO LLM
 # =============================================================================
 
 @st.cache_resource
 def get_llm(model_choice: str, custom_model: str, temperature: float, api_key: str) -> LLM:
-    """Cria instância do LLM nativo do CrewAI."""
     if not api_key:
         st.error("⚠️ API Key não configurada!")
         st.stop()
 
     model_name = custom_model.strip() if custom_model and custom_model.strip() else model_choice
 
-    if "gemini" in model_name.lower() and not model_name.startswith("gemini/"):
-        model_name = f"gemini/{model_name}"
+    if "gemini" in model_name.lower() and not model_name.startswith("google/"):
+        bare = model_name.split("/")[-1]
+        model_name = f"google/{bare}"
 
     try:
         return LLM(model=model_name, api_key=api_key, temperature=temperature)
     except Exception as e:
         st.error(f"Erro ao inicializar o modelo '{model_name}': {e}")
-        st.info("Confira se o nome do modelo está correto para sua conta Google Vertex/GenAI.")
+        st.info("Confira se o nome do modelo está correto. Exemplo: gemini-2.5-flash-lite")
         st.stop()
 
 
 # =============================================================================
-# CRIAÇÃO DOS AGENTES
+# CRIAÇÃO DOS AGENTES  ← usam session_state quando disponível
 # =============================================================================
 
 def create_agents(llm, verbose_mode: bool = False) -> list:
-    """Cria o agente analista de endoscopia."""
+    cfg = _get_analista_cfg()
     multiendoscopia_analista = Agent(
-        role="Analista de Controle dos procedimentos de Endoscopia",
-        goal="""IDIOMA: Todo o seu raciocínio e respostas devem ser escritos EXCLUSIVAMENTE
-em português brasileiro. Nunca use inglês, nem mesmo no campo "Thought" ou "Final Answer".
-
-Identificar o tipo do arquivo recebido (PRODUCAO ou REPASSE) e extrair
-TODAS as linhas de dados, estruturando-as em CSV padronizado para confronto posterior.
-
-== ARQUIVO PRODUCAO (planilha da equipe de enfermagem) ==
-Colunas originais esperadas:
-  DATA, NOME DO PACIENTE, Nº ATENDIMENTO, CONVÊNIO, ORIGEM,
-  EXAME REALIZADO, PROCEDIMENTOS ADICIONAIS, MÉDICO EXECUTOR,
-  LOCAL / SETOR, SALA, CARATER, OBSERVAÇÃO + PROCEDIMENTOS ADICIONAIS
-
-Regras de extração:
-- Cada exame realizado gera UMA linha no CSV de saída.
-- Se houver PROCEDIMENTOS ADICIONAIS preenchidos, gerar uma linha EXTRA para cada
-  procedimento adicional listado (ex: "TESTE DE UREASE" vira linha separada).
-- A coluna CONVÊNIO pode conter abreviações (ex: "PROMOVE") — manter como está.
-- Não há código TUSS nem valor neste arquivo; deixar CodigoTUSS e ValorLiberado vazios.
-- Coluna TipoArquivo = "PRODUCAO".
-
-Colunas de saída para PRODUCAO:
-  Data, NrAtendimento, Paciente, Convenio, Procedimento, CodigoTUSS,
-  MedicoExecutor, ValorLiberado, QtProcedimento, TipoArquivo, Observacao
-
-== ARQUIVO REPASSE (planilha emitida pelo hospital) ==
-Colunas originais esperadas:
-  Ds estabelecimento, Ds terceiro, Nr repasse terceiro, Nr atendimento,
-  Paciente, Convenio, Ds categoria, Cód Item TUSS, Ds procedimento,
-  Nm medico executor, Porcentagem, Ds funcao, Ds especialidade,
-  Qt procedimento, Dt procedimento, Vl liberado
-
-Regras de extração:
-- Cada linha do arquivo = uma linha no CSV de saída.
-- Manter o código TUSS original (campo "Cód Item TUSS").
-- Manter o valor liberado (campo "Vl liberado") como ValorLiberado.
-- Coluna TipoArquivo = "REPASSE".
-
-Colunas de saída para REPASSE:
-  Data, NrAtendimento, Paciente, Convenio, Procedimento, CodigoTUSS,
-  MedicoExecutor, ValorLiberado, QtProcedimento, TipoArquivo, Observacao
-
-== REGRAS GERAIS ==
-- Padronizar Data para DD/MM/AAAA.
-- Padronizar nomes de paciente em MAIÚSCULAS sem espaços extras.
-- Retornar APENAS o CSV puro, sem markdown, sem explicações.
-- Primeira linha obrigatoriamente o cabeçalho:
-  Data,NrAtendimento,Paciente,Convenio,Procedimento,CodigoTUSS,MedicoExecutor,ValorLiberado,QtProcedimento,TipoArquivo,Observacao""",
-        backstory="""Expert em análise de faturamento hospitalar e auditoria de convênios médicos.
-Especializado na Terminologia Unificada da Saúde Suplementar (TUSS) e nas regras de
-faturamento dos principais convênios do Brasil.
-Conhece em profundidade os campos das planilhas de produtividade de equipes de enfermagem
-e os arquivos de repasse hospitalares (formato Hospital São Camilo e similares).
-Sabe que o número de atendimento pode divergir entre os dois arquivos para o mesmo
-paciente/procedimento, portanto não usa esse campo como chave única.
-Seu principal objetivo é estruturar os dados com máxima fidelidade para que o agente
-correlacionador consiga fazer o batimento correto.""",
+        role=cfg["role"],
+        goal=cfg["goal"],
+        backstory=cfg["backstory"],
         llm=llm,
         verbose=verbose_mode,
         allow_delegation=False,
@@ -302,57 +324,11 @@ correlacionador consiga fazer o batimento correto.""",
 
 
 def create_correlator_agent(llm, verbose_mode: bool = False) -> Agent:
-    """Cria o agente correlacionador dos registros de endoscopia."""
+    cfg = _get_correlacionador_cfg()
     return Agent(
-        role="Correlacionador dos registros de endoscopia",
-        goal="""IDIOMA: Todo o seu raciocínio e respostas devem ser escritos EXCLUSIVAMENTE
-em português brasileiro. Nunca use inglês, nem mesmo no campo "Thought" ou "Final Answer".
-
-Receber os CSVs padronizados gerados pelo Analista — um do tipo PRODUCAO
-e outro do tipo REPASSE — e realizar o Batimento Automático linha a linha.
-
-== CHAVE DE CORRELAÇÃO ==
-ATENÇÃO: o número de atendimento (NrAtendimento) pode ser DIFERENTE entre os dois
-arquivos para o mesmo episódio. Portanto, a chave de correlação deve ser COMPOSTA por:
-  1. Data (DD/MM/AAAA) — tolerância de ± 1 dia para o mesmo episódio
-  2. Paciente (nome normalizado em maiúsculas)
-  3. Procedimento (correspondência semântica: "COLONOSCOPIA" bate com
-     "Colonoscopia (Inclui A Retossigmoidoscopia)", "TESTE DE UREASE" bate com
-     "Pesquisa de H. pylori - Teste da Urease", etc.)
-
-NÃO usar médico executor como chave, pois o nome pode ser abreviado na PRODUCAO
-(ex: "DRA. PAULA") e completo no REPASSE ("CHARLIANA UCHOA CRISTOVAO").
-
-== FLUXO DE BATIMENTO ==
-1. Para cada linha da PRODUCAO, tentar encontrar correspondência no REPASSE
-   usando a chave composta acima.
-2. Se encontrar correspondência:
-   a. Se ValorLiberado coincidir (ou REPASSE não tiver valor): StatusCorrelacao = "CORRELACIONADO"
-   b. Se ValorLiberado for menor no REPASSE: StatusCorrelacao = "CORRELACIONADO_COM_DIVERGENCIA_VALOR"
-   c. Se ValorLiberado = 0 no REPASSE: StatusCorrelacao = "CORRELACIONADO_COM_GLOSA_TOTAL"
-   d. Se ValorLiberado > 0 mas menor que esperado: StatusCorrelacao = "CORRELACIONADO_COM_GLOSA_PARCIAL"
-3. Se NÃO encontrar correspondência no REPASSE: StatusCorrelacao = "NAO_FATURADO_NO_REPASSE"
-4. Para linhas do REPASSE sem correspondência na PRODUCAO: StatusCorrelacao = "REPASSE_NAO_IDENTIFICADO_NA_PRODUCAO"
-
-== COLUNAS DO CSV DE SAÍDA ==
-Data, NrAtendProducao, NrAtendRepasse, Paciente, Convenio, Procedimento, CodigoTUSS,
-MedicoExecutor, QtProcedimento, ValorLiberado, StatusCorrelacao, Observacao
-
-== REGRAS OBRIGATÓRIAS ==
-1. NÃO remover nenhuma linha da PRODUCAO.
-2. Padronizar Data para DD/MM/AAAA.
-3. Padronizar ValorLiberado: ponto decimal, sem símbolo de moeda.
-4. Ordenar por Data crescente.
-5. Ao final, adicionar seção separada por linha em branco:
-   # RESUMO_DIVERGENCIAS_POR_CONVENIO
-   com colunas: Convenio, TotalProcedimentos, Correlacionados, Divergencias,
-   GlosasTotal, GlosasParcial, NaoFaturados, NaoIdentificados, ValorTotalLiberado""",
-        backstory="""Especialista em auditoria de faturamento médico, ETL e reconciliação de dados hospitalares.
-Domina as particularidades dos arquivos de repasse do Hospital São Camilo e similares.
-Sabe que divergências de nomenclatura entre planilhas internas e sistemas hospitalares são
-comuns e usa correspondência semântica para não perder correlações válidas.
-Nunca inventa procedimentos — apenas padroniza, correlaciona e sinaliza divergências.
-Seu trabalho alimenta diretamente a cobrança estruturada junto ao hospital e convênios.""",
+        role=cfg["role"],
+        goal=cfg["goal"],
+        backstory=cfg["backstory"],
         llm=llm,
         verbose=verbose_mode,
         allow_delegation=False,
@@ -360,34 +336,15 @@ Seu trabalho alimenta diretamente a cobrança estruturada junto ao hospital e co
 
 
 def create_correlation_task(correlator_agent: Agent, csvs_por_arquivo: dict) -> Task:
-    """Cria a task de correlação recebendo o dicionário {filename: csv_bruto}."""
+    cfg = _get_correlacionador_cfg()
     blocos = "\n\n".join(
         f"=== ARQUIVO: {fname} ===\n{csv_text}"
         for fname, csv_text in csvs_por_arquivo.items()
     )
+    description = cfg["task_description_template"].replace("{blocos}", blocos)
     return Task(
-        description=f"""IDIOMA: Responda EXCLUSIVAMENTE em português brasileiro. Nunca use inglês.
-
-Você recebeu os seguintes blocos CSV padronizados pelo Analista de Endoscopia,
-identificados como PRODUCAO e REPASSE. Execute o batimento automático conforme as regras
-do seu objetivo (goal), usando chave composta de Data + Paciente + Procedimento.
-
-{blocos}
-
-IMPORTANTE:
-- Retorne APENAS o CSV correlacionado (mais a seção de resumo ao final).
-- Não inclua explicações, markdown, nem blocos de código — apenas o conteúdo puro do CSV.
-- A primeira linha deve ser obrigatoriamente o cabeçalho:
-  Data,NrAtendProducao,NrAtendRepasse,Paciente,Convenio,Procedimento,CodigoTUSS,MedicoExecutor,QtProcedimento,ValorLiberado,StatusCorrelacao,Observacao""",
-        expected_output=(
-            "CSV puro com cabeçalho "
-            "'Data,NrAtendProducao,NrAtendRepasse,Paciente,Convenio,Procedimento,CodigoTUSS,"
-            "MedicoExecutor,QtProcedimento,ValorLiberado,StatusCorrelacao,Observacao', "
-            "seguido de todas as linhas ordenadas por Data, "
-            "e ao final a seção '# RESUMO_DIVERGENCIAS_POR_CONVENIO' com colunas: "
-            "Convenio, TotalProcedimentos, Correlacionados, Divergencias, GlosasTotal, "
-            "GlosasParcial, NaoFaturados, NaoIdentificados, ValorTotalLiberado."
-        ),
+        description=description,
+        expected_output=cfg["task_expected_output"],
         agent=correlator_agent,
     )
 
@@ -404,14 +361,9 @@ COLUNAS_ESPERADAS = [
 
 
 def extrair_csv_do_texto(texto: str) -> str:
-    """
-    Extrai o bloco CSV de dentro de uma resposta que pode conter texto livre,
-    blocos markdown ou conteúdo puro.
-    """
     match = re.search(r"```(?:csv)?\s*\n(.*?)```", texto, re.DOTALL | re.IGNORECASE)
     if match:
         return match.group(1).strip()
-
     linhas_csv = [
         linha for linha in texto.splitlines()
         if linha.count(",") >= 4 or linha.startswith("Data,")
@@ -420,7 +372,6 @@ def extrair_csv_do_texto(texto: str) -> str:
 
 
 def separar_resumo_do_csv(texto_csv: str) -> tuple[str, str]:
-    """Separa o bloco de dados do bloco de resumo."""
     marcador = "# RESUMO_DIVERGENCIAS_POR_CONVENIO"
     if marcador in texto_csv:
         partes = texto_csv.split(marcador, 1)
@@ -429,7 +380,6 @@ def separar_resumo_do_csv(texto_csv: str) -> tuple[str, str]:
 
 
 def texto_para_dataframe(csv_texto: str) -> pd.DataFrame | None:
-    """Converte texto CSV em DataFrame pandas. Retorna None em caso de falha."""
     try:
         csv_limpo = extrair_csv_do_texto(csv_texto)
         csv_dados, _ = separar_resumo_do_csv(csv_limpo)
@@ -442,56 +392,15 @@ def texto_para_dataframe(csv_texto: str) -> pd.DataFrame | None:
 
 
 # =============================================================================
-# CRIAÇÃO DAS TASKS
+# CRIAÇÃO DAS TASKS  ← usa session_state quando disponível
 # =============================================================================
 
 def create_tasks(agents: list, conteudo_arquivo: str) -> list:
-    """Cria as tasks encadeadas para análise de um arquivo de endoscopia."""
+    cfg = _get_analista_cfg()
+    description = cfg["task_description_template"].replace("{conteudo_arquivo}", conteudo_arquivo)
     task_analise = Task(
-        description=f"""IDIOMA: Responda EXCLUSIVAMENTE em português brasileiro. Nunca use inglês.
-
-Analise o arquivo de endoscopia abaixo e identifique se é do tipo
-PRODUCAO (planilha da equipe de enfermagem) ou REPASSE (emitido pelo hospital).
-
-=== CONTEÚDO DO ARQUIVO ===
-{conteudo_arquivo}
-
-=== INSTRUÇÕES ESPECÍFICAS ===
-
-Se for PRODUCAO, as colunas originais são:
-  DATA | NOME DO PACIENTE | Nº ATENDIMENTO | CONVÊNIO | ORIGEM |
-  EXAME REALIZADO | PROCEDIMENTOS ADICIONAIS | MÉDICO EXECUTOR |
-  LOCAL / SETOR | SALA | CARATER | OBSERVAÇÃO + PROCEDIMENTOS ADICIONAIS
-
-  - Gerar uma linha para cada EXAME REALIZADO.
-  - Se PROCEDIMENTOS ADICIONAIS estiver preenchido, gerar uma linha ADICIONAL para
-    cada procedimento listado (separados por vírgula ou quebra de linha).
-  - Deixar CodigoTUSS e ValorLiberado vazios (não há na PRODUCAO).
-  - TipoArquivo = "PRODUCAO"
-
-Se for REPASSE, as colunas originais são:
-  Ds estabelecimento | Ds terceiro | Nr repasse terceiro | Nr atendimento |
-  Paciente | Convenio | Ds categoria | Cód Item TUSS | Ds procedimento |
-  Nm medico executor | Porcentagem | Ds funcao | Ds especialidade |
-  Qt procedimento | Dt procedimento | Vl liberado
-
-  - Mapear: "Cód Item TUSS" → CodigoTUSS, "Vl liberado" → ValorLiberado,
-    "Dt procedimento" → Data, "Nr atendimento" → NrAtendimento,
-    "Nm medico executor" → MedicoExecutor, "Qt procedimento" → QtProcedimento.
-  - TipoArquivo = "REPASSE"
-
-=== SAÍDA OBRIGATÓRIA ===
-Retorne APENAS o CSV puro, sem markdown, sem explicações.
-Cabeçalho obrigatório na primeira linha:
-Data,NrAtendimento,Paciente,Convenio,Procedimento,CodigoTUSS,MedicoExecutor,ValorLiberado,QtProcedimento,TipoArquivo,Observacao
-
-Não omita nenhuma linha — cada procedimento registrado deve constar no CSV gerado.""",
-        expected_output=(
-            "CSV puro com cabeçalho "
-            "'Data,NrAtendimento,Paciente,Convenio,Procedimento,CodigoTUSS,MedicoExecutor,"
-            "ValorLiberado,QtProcedimento,TipoArquivo,Observacao', "
-            "com todas as linhas do arquivo estruturadas e TipoArquivo preenchido."
-        ),
+        description=description,
+        expected_output=cfg["task_expected_output"],
         agent=agents[0],
     )
     return [task_analise]
@@ -501,12 +410,93 @@ Não omita nenhuma linha — cada procedimento registrado deve constar no CSV ge
 # INTERFACE STREAMLIT
 # =============================================================================
 
+def render_agent_form(agent_key: str, defaults: dict, title: str, icon: str):
+    """
+    Renderiza o formulário de edição de um agente.
+    Salva os valores em st.session_state[agent_key].
+    """
+    cfg = st.session_state.get(agent_key, dict(defaults))
+
+    st.markdown(f"### {icon} {title}")
+
+    with st.container(border=True):
+        col_info, col_reset = st.columns([5, 1])
+        with col_info:
+            st.caption("Edite os campos abaixo e clique em **Salvar Alterações** para aplicar.")
+        with col_reset:
+            if st.button("↩️ Restaurar", key=f"reset_{agent_key}", help="Volta aos valores padrão originais"):
+                st.session_state[agent_key] = dict(defaults)
+                st.rerun()
+
+        new_role = st.text_input(
+            "🏷️ Role (papel do agente)",
+            value=cfg.get("role", ""),
+            key=f"{agent_key}_role",
+            help="Define o papel/função do agente dentro do crew.",
+        )
+
+        new_goal = st.text_area(
+            "🎯 Goal (objetivo)",
+            value=cfg.get("goal", ""),
+            height=320,
+            key=f"{agent_key}_goal",
+            help="Descreve o objetivo principal do agente — instruções detalhadas de comportamento.",
+        )
+
+        new_backstory = st.text_area(
+            "📖 Backstory (contexto/experiência)",
+            value=cfg.get("backstory", ""),
+            height=180,
+            key=f"{agent_key}_backstory",
+            help="Contexto e experiência do agente — usado para orientar o tom e o raciocínio.",
+        )
+
+        st.divider()
+        st.markdown("#### 📋 Task associada")
+
+        new_task_desc = st.text_area(
+            "📝 Task Description (template)",
+            value=cfg.get("task_description_template", ""),
+            height=280,
+            key=f"{agent_key}_task_desc",
+            help=(
+                "Template da instrução enviada ao agente em cada execução. "
+                "Use {conteudo_arquivo} (Analista) ou {blocos} (Correlacionador) "
+                "como placeholder do conteúdo dinâmico."
+            ),
+        )
+
+        new_task_output = st.text_area(
+            "✅ Task Expected Output (saída esperada)",
+            value=cfg.get("task_expected_output", ""),
+            height=100,
+            key=f"{agent_key}_task_output",
+            help="Descreve o formato/conteúdo esperado na saída da task.",
+        )
+
+        col_save, col_status = st.columns([2, 5])
+        with col_save:
+            if st.button(f"💾 Salvar Alterações — {title}", key=f"save_{agent_key}", type="primary"):
+                st.session_state[agent_key] = {
+                    "role": new_role,
+                    "goal": new_goal,
+                    "backstory": new_backstory,
+                    "task_description_template": new_task_desc,
+                    "task_expected_output": new_task_output,
+                }
+                with col_status:
+                    st.success(f"✅ Configuração do **{title}** salva com sucesso!")
+
+
 def main():
     st.set_page_config(
         page_title="Endoscopia | Controle de Procedimentos",
         page_icon="🔬",
         layout="wide",
     )
+
+    # Inicializa os defaults dos agentes no session_state (executado uma vez por sessão)
+    _init_agent_session_state()
 
     st.markdown(
         '<h1 style="text-align: center;">🔬 Sistema de Controle de Procedimentos de Endoscopia</h1>',
@@ -544,8 +534,8 @@ def main():
 
         custom_model = st.text_input(
             "🤖 Modelo Gemini",
-            value="gemini/gemini-2.5-flash-lite",
-            help="Exemplos: gemini/gemini-2.5-flash-lite, gemini/gemini-2.5-flash, gemini/gemini-2.5-pro",
+            value="gemini-2.5-flash-lite",
+            help="Digite só o nome do modelo. Exemplos: gemini-2.5-flash-lite, gemini-2.5-flash, gemini-2.5-pro",
         )
         temperature = st.slider(
             "🌡️ Temperatura",
@@ -582,7 +572,13 @@ def main():
         """)
 
     # ── Tabs ──────────────────────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs(["📄 Input", "🚀 Execução", "📊 Resultados", "🔀 Correlação"])
+    tab1, tab2, tab3, tab4, tab_agents = st.tabs([
+        "📄 Input",
+        "🚀 Execução",
+        "📊 Resultados",
+        "🔀 Correlação",
+        "🤖 Agentes",
+    ])
 
     # ── TAB 1: INPUT ──────────────────────────────────────────────────────────
     with tab1:
@@ -657,7 +653,7 @@ def main():
             st.warning("Envie os arquivos na aba Input")
 
         if st.button("🚀 Iniciar Análise", type="primary"):
-            llm = get_llm("gemini/gemini-2.5-flash", custom_model, temperature, api_key)
+            llm = get_llm("gemini-2.5-flash-lite", custom_model, temperature, api_key)
             agents = create_agents(llm, verbose_mode)
             resultados = {}
 
@@ -811,7 +807,7 @@ def main():
                     def _run_correlation(result_holder: dict):
                         try:
                             llm_corr = get_llm(
-                                "gemini/gemini-2.5-flash", custom_model, temperature, api_key
+                                "gemini-2.5-flash-lite", custom_model, temperature, api_key
                             )
                             correlator = create_correlator_agent(llm_corr, verbose_mode)
                             task_corr = create_correlation_task(correlator, csvs_brutos)
@@ -871,7 +867,6 @@ def main():
                 df_final = texto_para_dataframe(csv_dados_str)
 
                 if df_final is not None and not df_final.empty:
-                    # Métricas rápidas — prefixos alinhados com os StatusCorrelacao do agente
                     col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
                     total_linhas = len(df_final)
 
@@ -887,7 +882,6 @@ def main():
                     col_m4.metric("🚫 Glosas",                 int(n_glosa))
                     col_m5.metric("❌ Não Faturados",           int(n_nao_faturado))
 
-                    # Filtros interativos
                     with st.expander("🔍 Filtros", expanded=False):
                         fcol1, fcol2, fcol3 = st.columns(3)
 
@@ -906,7 +900,6 @@ def main():
                             "Código TUSS", tuss_disp, default=tuss_disp
                         )
 
-                    # Aplica filtros
                     df_filtrado = df_final.copy()
                     if "Convenio" in df_filtrado.columns and filtro_convenio:
                         df_filtrado = df_filtrado[df_filtrado["Convenio"].isin(filtro_convenio)]
@@ -915,19 +908,18 @@ def main():
                     if "CodigoTUSS" in df_filtrado.columns and filtro_tuss:
                         df_filtrado = df_filtrado[df_filtrado["CodigoTUSS"].isin(filtro_tuss)]
 
-                    # Destaque visual por status
                     def highlight_status(row):
                         status = str(row.get("StatusCorrelacao", "")).upper()
                         if status == "CORRELACIONADO":
-                            return ["background-color: #d4edda"] * len(row)   # verde
+                            return ["background-color: #d4edda"] * len(row)
                         elif "DIVERGENCIA" in status:
-                            return ["background-color: #fff3cd"] * len(row)   # amarelo
+                            return ["background-color: #fff3cd"] * len(row)
                         elif "GLOSA" in status:
-                            return ["background-color: #f8d7da"] * len(row)   # vermelho claro
+                            return ["background-color: #f8d7da"] * len(row)
                         elif "NAO_FATURADO" in status:
-                            return ["background-color: #f8d7da"] * len(row)   # vermelho claro
+                            return ["background-color: #f8d7da"] * len(row)
                         elif "NAO_IDENTIFICADO" in status:
-                            return ["background-color: #e2e3e5"] * len(row)   # cinza
+                            return ["background-color: #e2e3e5"] * len(row)
                         return [""] * len(row)
 
                     st.dataframe(
@@ -936,7 +928,6 @@ def main():
                         height=460,
                     )
 
-                    # Download CSV filtrado
                     csv_download = df_filtrado.to_csv(index=False, sep=",", encoding="utf-8-sig")
                     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                     st.download_button(
@@ -957,11 +948,83 @@ def main():
                         mime="text/csv",
                     )
 
-                # Resumo de divergências por convênio
                 if resumo_str:
                     st.divider()
                     st.subheader("📋 Resumo — Divergências por Convênio")
                     st.markdown(resumo_str)
+
+    # ── TAB 5: AGENTES ────────────────────────────────────────────────────────
+    with tab_agents:
+        st.header("🤖 Configuração dos Agentes")
+        st.markdown(
+            "Visualize e edite os prompts de cada agente e suas tasks. "
+            "As alterações ficam ativas **durante esta sessão** e são aplicadas "
+            "imediatamente nas próximas execuções.\n\n"
+            "> 💡 Use o botão **↩️ Restaurar** para voltar ao texto original a qualquer momento."
+        )
+
+        # Indicador de estado atual
+        analista_modificado = st.session_state.get("analista_cfg") != ANALISTA_DEFAULTS
+        correlacionador_modificado = st.session_state.get("correlacionador_cfg") != CORRELACIONADOR_DEFAULTS
+
+        col_ind1, col_ind2, col_ind3 = st.columns([2, 2, 3])
+        with col_ind1:
+            if analista_modificado:
+                st.warning("✏️ Analista: configuração **personalizada**")
+            else:
+                st.success("✅ Analista: configuração **padrão**")
+        with col_ind2:
+            if correlacionador_modificado:
+                st.warning("✏️ Correlacionador: configuração **personalizada**")
+            else:
+                st.success("✅ Correlacionador: configuração **padrão**")
+        with col_ind3:
+            if analista_modificado or correlacionador_modificado:
+                if st.button("↩️ Restaurar TODOS os agentes ao padrão", type="secondary"):
+                    st.session_state["analista_cfg"] = dict(ANALISTA_DEFAULTS)
+                    st.session_state["correlacionador_cfg"] = dict(CORRELACIONADOR_DEFAULTS)
+                    st.rerun()
+
+        st.divider()
+
+        agent_tab1, agent_tab2 = st.tabs([
+            "🔍 Analista de Endoscopia",
+            "🔀 Correlacionador",
+        ])
+
+        with agent_tab1:
+            render_agent_form(
+                agent_key="analista_cfg",
+                defaults=ANALISTA_DEFAULTS,
+                title="Analista de Endoscopia",
+                icon="🔍",
+            )
+            st.divider()
+            with st.expander("ℹ️ Sobre o placeholder `{conteudo_arquivo}`", expanded=False):
+                st.markdown("""
+O campo **Task Description** do Analista usa o placeholder `{conteudo_arquivo}`.
+
+Durante a execução, ele é substituído automaticamente pelo conteúdo extraído de cada arquivo enviado na aba **📄 Input**.
+
+**Não remova este placeholder** — sem ele, o agente não receberá os dados do arquivo.
+                """)
+
+        with agent_tab2:
+            render_agent_form(
+                agent_key="correlacionador_cfg",
+                defaults=CORRELACIONADOR_DEFAULTS,
+                title="Correlacionador",
+                icon="🔀",
+            )
+            st.divider()
+            with st.expander("ℹ️ Sobre o placeholder `{blocos}`", expanded=False):
+                st.markdown("""
+O campo **Task Description** do Correlacionador usa o placeholder `{blocos}`.
+
+Durante a execução da correlação, ele é substituído automaticamente pelos CSVs gerados pelo Analista para cada arquivo processado.
+
+**Não remova este placeholder** — sem ele, o agente não receberá os dados para o batimento.
+                """)
 
 
 if __name__ == "__main__":
