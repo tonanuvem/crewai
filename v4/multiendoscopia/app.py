@@ -1,4 +1,4 @@
-""" app-endoscopia-v6
+""" app-endoscopia-v2
 Interface Streamlit para Sistema de Controle de Procedimentos de Endoscopia
 
 Instalar:
@@ -392,13 +392,14 @@ def _renomear_colunas(df: pd.DataFrame, mapa: dict) -> pd.DataFrame:
 
 def _padronizar_data(valor: str) -> str:
     """Converte qualquer formato de data reconhecível para DD/MM/AAAA."""
-    s = str(valor).strip() if valor else ""
-    if s in ("", "nan", "NaT", "NaN"):
+    if pd.isna(valor):
         return ""
-    if re.match(r"^\d{2}/\d{2}/\d{4}$", s):
-        return s
+
+    s = str(valor).strip()
+
     try:
-        return pd.to_datetime(s, dayfirst=True).strftime("%d/%m/%Y")
+        dt = pd.to_datetime(s, format="mixed")
+        return dt.strftime("%d/%m/%Y")
     except Exception:
         return s
 
@@ -1198,7 +1199,8 @@ def main():
                 with st.expander(doc["filename"]):
                     text = doc["content"]
                     #st.text(text[:2000])
-                    st.text(text)
+                    #st.text(text)
+                    st.text_area("Dados RAW", value=text, height=400)
                     c1, c2, c3 = st.columns(3)
                     c1.metric("Caracteres", len(text))
                     c2.metric("Palavras", len(text.split()))
@@ -1430,21 +1432,26 @@ def main():
             for file, result in results.items():
                 st.subheader(file)
                 #st.markdown(result)
-                combined_output += f"# Resultado: {file}\n\n{result}\n\n{'-' * 36}\n\n"
+                #combined_output += f"# Resultado: {file}\n\n{result}\n\n{'-' * 36}\n\n"
 
-            st.divider()
-            st.subheader("📄 Resultado Consolidado")
-            st.text_area("Relatório completo", value=combined_output, height=400)
-            
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            nome_sem_ext = os.path.splitext(file)[0]
-            st.download_button(
-                label="⬇️ Baixar CSV Processado",
-                data=result.encode("utf-8-sig"),
-                file_name=f"processado_{nome_sem_ext}_{ts}.csv",
-                mime="text/csv",
-                type="primary",
-            )
+                st.divider()
+                st.subheader("📄 Resultado Consolidado")
+                #st.text_area("Relatório completo", value=combined_output, height=400)
+                st.text_area("Relatório completo", value={result}, height=400)
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Caracteres", len(result))
+                c2.metric("Palavras", len(result.split()))
+                c3.metric("Linhas", len(result.splitlines()))
+                
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                nome_sem_ext = os.path.splitext(file)[0]
+                st.download_button(
+                    label="⬇️ Baixar CSV Processado",
+                    data=result.encode("utf-8-sig"),
+                    file_name=f"processado_{nome_sem_ext}_{ts}.csv",
+                    mime="text/csv",
+                    type="primary",
+                )
 
     # ── TAB 4: CORRELAÇÃO ─────────────────────────────────────────────────────
     with tab4:
