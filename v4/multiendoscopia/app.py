@@ -2490,7 +2490,7 @@ def main():
                 linhas_prod = len(df_prod_prev) if df_prod_prev is not None else 0
                 linhas_rep = len(df_rep_prev) if df_rep_prev is not None else 0
                 
-                st.markdown("### 📁 Arquivos Testados")
+                st.markdown("### 📁 Arquivos para serem correlacionados")
                 col_info1, col_info2 = st.columns(2)
                 with col_info1:
                     st.metric("**PRODUCAO:**", f"{linhas_prod} linhas")
