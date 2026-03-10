@@ -1226,6 +1226,60 @@ def _normalizar_procedimento(proc: str) -> str:
     s = re.sub(r'\s*[/+]\s*', ' ', s)  # Remove / e +
     return s
 
+def _expandir_abreviacao(proc: str) -> str:
+    """Expande abreviações comuns de procedimentos."""
+    ABREVIACOES = {
+        "COLONO": "COLONOSCOPIA",
+        "EDA": "ENDOSCOPIA DIGESTIVA ALTA",
+        "RETO": "RETOSSIGMOIDOSCOPIA",
+        "RETOSSIGMOIDO": "RETOSSIGMOIDOSCOPIA",
+        "POLIPECTOMIA": "POLIPECTOMIA",
+        "LIGADURA": "LIGADURA ELASTICA",
+        "DILATACAO": "DILATACAO ESOFAGICA",
+        "ESCLEROSE": "ESCLEROTERAPIA",
+        "MUCOSECTOMIA": "MUCOSECTOMIA",
+        "HEMOSTASIA": "HEMOSTASIA ENDOSCOPICA",
+    }
+    proc_norm = _normalizar_procedimento(proc)
+    
+    # Verifica match exato
+    if proc_norm in ABREVIACOES:
+        return ABREVIACOES[proc_norm]
+    
+    # Verifica se começa com abreviação
+    for abrev, expandido in ABREVIACOES.items():
+        if proc_norm.startswith(abrev + " ") or proc_norm == abrev:
+            return proc_norm.replace(abrev, expandido, 1)
+    
+    return proc_norm
+
+def _match_palavra_contida(proc1: str, proc2: str) -> bool:
+    """Verifica se um procedimento está contido no outro ou compartilha palavra-chave."""
+    p1 = _normalizar_procedimento(proc1).strip()
+    p2 = _normalizar_procedimento(proc2).strip()
+    
+    if not p1 or not p2:
+        return False
+    
+    # Verifica contenção direta
+    if p1 in p2 or p2 in p1:
+        return True
+    
+    # Verifica se primeira palavra significativa é igual (mínimo 4 caracteres)
+    palavras1 = [p for p in p1.split() if len(p) >= 4]
+    palavras2 = [p for p in p2.split() if len(p) >= 4]
+    
+    if palavras1 and palavras2:
+        # Verifica se primeira palavra significativa é igual
+        if palavras1[0] == palavras2[0]:
+            return True
+        # Verifica se alguma palavra significativa está contida
+        for palavra in palavras1:
+            if len(palavra) >= 6 and any(palavra in p2_word or p2_word in palavra for p2_word in palavras2):
+                return True
+    
+    return False
+
 def _verificar_sinonimo(proc1: str, proc2: str) -> bool:
     """Verifica se dois procedimentos são sinônimos conhecidos."""
     p1_norm = _normalizar_procedimento(proc1)
@@ -1263,15 +1317,24 @@ def _similaridade_procedimento(proc1: str, proc2: str, cache: Dict = None) -> fl
         if key in cache:
             return cache[key]
     
-    p1 = _normalizar_procedimento(proc1)
-    p2 = _normalizar_procedimento(proc2)
+    # Expande abreviações antes de comparar
+    p1_expandido = _expandir_abreviacao(proc1)
+    p2_expandido = _expandir_abreviacao(proc2)
     
-    if not p1 or not p2:
+    if not p1_expandido or not p2_expandido:
         return 0.0
     
-    # Match exato após normalização
-    if p1 == p2:
+    # Match exato após expansão
+    if p1_expandido == p2_expandido:
+        if cache is not None:
+            cache[(proc1, proc2)] = 1.0
         return 1.0
+    
+    # Verifica match por palavra contida
+    if _match_palavra_contida(p1_expandido, p2_expandido):
+        if cache is not None:
+            cache[(proc1, proc2)] = 0.95
+        return 0.95
     
     # Verifica sinônimos conhecidos
     if _verificar_sinonimo(proc1, proc2):
@@ -1280,21 +1343,21 @@ def _similaridade_procedimento(proc1: str, proc2: str, cache: Dict = None) -> fl
         return 1.0
     
     # Verifica se um contém o outro (palavras-chave)
-    palavras1 = set(p1.split())
-    palavras2 = set(p2.split())
+    palavras1 = set(p1_expandido.split())
+    palavras2 = set(p2_expandido.split())
     intersecao = palavras1 & palavras2
     
     if intersecao:
         # Se tem palavras em comum, calcula similaridade
         ratio = len(intersecao) / max(len(palavras1), len(palavras2))
-        if ratio >= 0.4:  # Reduzido de 0.5 para 0.4
-            score = SequenceMatcher(None, p1, p2).ratio()
+        if ratio >= 0.4:
+            score = SequenceMatcher(None, p1_expandido, p2_expandido).ratio()
             if cache is not None:
                 cache[(proc1, proc2)] = score
             return score
     
     # Fallback para SequenceMatcher completo
-    score = SequenceMatcher(None, p1, p2).ratio()
+    score = SequenceMatcher(None, p1_expandido, p2_expandido).ratio()
     if cache is not None:
         cache[(proc1, proc2)] = score
     return score
@@ -2420,14 +2483,26 @@ def main():
                     "Verifique se os arquivos foram processados corretamente na aba Execução."
                 )
             else:
+                # Informações dos arquivos testados
+                df_prod_prev = texto_para_dataframe(csv_producao)
+                df_rep_prev = texto_para_dataframe(csv_repasse)
+                
+                linhas_prod = len(df_prod_prev) if df_prod_prev is not None else 0
+                linhas_rep = len(df_rep_prev) if df_rep_prev is not None else 0
+                
+                st.markdown("### 📁 Arquivos Testados")
+                col_info1, col_info2 = st.columns(2)
+                with col_info1:
+                    st.metric("**PRODUCAO:**", f"{linhas_prod} linhas")
+                with col_info2:
+                    st.metric("**REPASSE:**", f"{linhas_rep} linhas")
+                
                 with st.expander(f"📋 Preview dos CSVs ({len(csvs_brutos)} arquivo(s))", expanded=False):
                     st.markdown("**PRODUCAO:**")
-                    df_prod_prev = texto_para_dataframe(csv_producao)
                     if df_prod_prev is not None and not df_prod_prev.empty:
                         st.dataframe(df_prod_prev.head(5), use_container_width=True)
                     
                     st.markdown("**REPASSE:**")
-                    df_rep_prev = texto_para_dataframe(csv_repasse)
                     if df_rep_prev is not None and not df_rep_prev.empty:
                         st.dataframe(df_rep_prev.head(5), use_container_width=True)
 
@@ -2601,6 +2676,47 @@ def main():
                     col_m3.metric("⚠️ Divergências de Valor",  int(n_divergencia))
                     col_m4.metric("🚫 Glosas",                 int(n_glosa))
                     col_m5.metric("❌ Não Faturados",           int(n_nao_faturado))
+                    
+                    # Métricas detalhadas de correlação
+                    st.markdown("---")
+                    st.markdown("### 📊 Resultados da Correlação")
+                    
+                    # Calcula métricas adicionais
+                    n_repasse_nao_identificado = (status_col.str.upper() == "REPASSE_NAO_IDENTIFICADO_NA_PRODUCAO").sum()
+                    
+                    # Tenta identificar matches por nome vs atendimento (se houver coluna de método)
+                    matches_nome = 0
+                    matches_atendimento = 0
+                    if "MetodoMatch" in df_final.columns:
+                        matches_nome = (df_final["MetodoMatch"].str.upper() == "NOME").sum()
+                        matches_atendimento = (df_final["MetodoMatch"].str.upper() == "ATENDIMENTO").sum()
+                    
+                    col_r1, col_r2, col_r3 = st.columns(3)
+                    with col_r1:
+                        st.markdown("**Correlações bem-sucedidas**")
+                        perc_corr = (n_correlacionado / total_linhas * 100) if total_linhas > 0 else 0
+                        st.info(f"**{n_correlacionado}** ({perc_corr:.1f}%)")
+                        
+                        if matches_nome > 0 or matches_atendimento > 0:
+                            st.markdown("**Matches por nome normalizado**")
+                            perc_nome = (matches_nome / n_correlacionado * 100) if n_correlacionado > 0 else 0
+                            st.success(f"**{matches_nome}** ({perc_nome:.1f}%)")
+                            
+                            st.markdown("**Matches por NrAtendimento (fallback)**")
+                            perc_atend = (matches_atendimento / n_correlacionado * 100) if n_correlacionado > 0 else 0
+                            st.success(f"**{matches_atendimento}** ({perc_atend:.1f}%)")
+                    
+                    with col_r2:
+                        st.markdown("**Não faturados no REPASSE**")
+                        perc_nao_fat = (n_nao_faturado / total_linhas * 100) if total_linhas > 0 else 0
+                        st.warning(f"**{n_nao_faturado}** ({perc_nao_fat:.1f}%)")
+                    
+                    with col_r3:
+                        st.markdown("**REPASSE não identificado**")
+                        perc_rep_nao_id = (n_repasse_nao_identificado / total_linhas * 100) if total_linhas > 0 else 0
+                        st.error(f"**{n_repasse_nao_identificado}** ({perc_rep_nao_id:.1f}%)")
+                    
+                    st.markdown("---")
 
                     with st.expander("🔍 Filtros", expanded=False):
                         fcol1, fcol2, fcol3 = st.columns(3)
