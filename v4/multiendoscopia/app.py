@@ -244,27 +244,40 @@ def read_text_file(file) -> str:
 def read_excel_file(file) -> str:
     try:
         file.seek(0)
-        xls = pd.ExcelFile(file, engine="openpyxl")
+        # Identifica a extensão do arquivo
+        file_extension = file.name.split('.')[-1].lower()
+        
+        # Define o engine correto: xlrd para .xls e openpyxl para .xlsx
+        engine = "openpyxl" if file_extension == "xlsx" else "xlrd"
+        
+        # Lê o arquivo Excel com o engine apropriado
+        xls = pd.ExcelFile(file, engine=engine)
+        
         blocos = []
         for sheet_name in xls.sheet_names:
             df = xls.parse(sheet_name, dtype=str)
             df.fillna("", inplace=True)
             df.dropna(axis=1, how="all", inplace=True)
             df.dropna(axis=0, how="all", inplace=True)
+            
             if df.empty:
                 continue
-            # FIX: remove quebras de linha internas em células Excel (Alt+Enter)
+                
+            # Remove quebras de linha internas em células
             df = df.apply(lambda col: col.map(
                 lambda v: re.sub(r"[\r\n]+", " ", str(v)).strip() if isinstance(v, str) else v
             ))
+            
             csv_str = df.to_csv(index=False, sep=",", encoding="utf-8")
             blocos.append(f"=== ABA: {sheet_name} ===\n{csv_str}")
+            
         if not blocos:
             st.warning("O arquivo Excel não contém dados nas abas.")
             return None
+            
         return "\n\n".join(blocos)
     except Exception as e:
-        st.error(f"Erro ao ler arquivo Excel: {e}")
+        st.error(f"Erro ao ler arquivo Excel (.{file_extension}): {e}")
         return None
 
 
@@ -416,25 +429,37 @@ _MAP_PRODUCAO_2026 = {
 }
 
 _MAP_REPASSE = {
-    "ds estabelecimento":  "Estabelecimento",
-    "ds terceiro":         "Terceiro",
+    "ds estabelecimento": "Estabelecimento",
+    "cnpj estabelecimento": "CNPJ",
+    "ds terceiro": "Terceiro",
+    "ds status": "Status",
     "nr repasse terceiro": "NrRepasse",
-    "nr atendimento":      "NrAtendimento",
-    "paciente":            "Paciente",
-    "convenio":            "Convenio",
-    "convênio":            "Convenio",
-    "ds categoria":        "Categoria",
-    "cód item tuss":       "CodigoTUSS",
-    "cod item tuss":       "CodigoTUSS",
-    "ds procedimento":     "Procedimento",
-    "nm medico executor":  "MedicoExecutor",
-    "porcentagem":         "Porcentagem",
-    "ds funcao":           "Funcao",
-    "ds especialidade":    "Especialidade",
-    "qt procedimento":     "QtProcedimento",
-    "dt procedimento":     "Data",
-    "vl liberado":         "ValorLiberado",
+    "tipo": "TipoItem",
+    "nr atendimento": "NrAtendimento",
+    "tp atend": "TipoAtendimento",
+    "nr interno conta": "NrInternoConta",
+    "paciente": "Paciente",
+    "convenio": "Convenio",
+    "convênio": "Convenio",
+    "ds categoria": "Categoria",
+    "cód item tuss": "CodigoTUSS",
+    "cod item tuss": "CodigoTUSS",
+    "ds procedimento": "Procedimento",
+    "via unid med": "Via",
+    "nm medico executor": "MedicoExecutor",
+    "médico executor": "MedicoExecutor",
+    "porcentagem": "Porcentagem",
+    "ds funcao": "Funcao",
+    "ds especialidade": "Especialidade",
+    "qt procedimento": "QtProcedimento",
+    "dt procedimento": "Data",
+    "vl liberado": "ValorLiberado",
+    "valor liberado": "ValorLiberado"
 }
+
+# Conjunto de todas as colunas canônicas do REPASSE (derivado automaticamente do mapa)
+# Usado para garantir que todas as colunas estejam presentes após o processamento
+_COLUNAS_CANONICAS_REPASSE = set(_MAP_REPASSE.values())
 
 # =============================================================================
 # FUNÇÕES AUXILIARES PRIVADAS
@@ -806,14 +831,24 @@ def _processar_aba_repasse(df: pd.DataFrame, nome_aba: str) -> pd.DataFrame:
     """
     Normaliza um DataFrame de REPASSE:
     - Renomeia colunas pelo mapa
+    - Limpa valores "Unnamed: N" gerados pelo pandas ao ler Excel
+    - Garante que TODAS as colunas canonicas do _MAP_REPASSE existam (vazias se ausentes)
     - Padroniza Data, Paciente e ValorLiberado
     - Adiciona TipoArquivo = 'REPASSE' e AbaOrigemDados
+    - Remove colunas lixo: Extra_N e duplicatas pandas (sufixo .1, .2, ...)
     """
     df = _renomear_colunas(df, _MAP_REPASSE)
 
-    for col in ("Data", "Paciente", "Procedimento", "Convenio",
-                "NrAtendimento", "MedicoExecutor", "ValorLiberado",
-                "CodigoTUSS", "QtProcedimento"):
+    # Limpa valores "Unnamed: N" nos dados (problema do Excel com colunas sem cabecalho)
+    for col in df.columns:
+        df[col] = df[col].apply(
+            lambda v: "" if str(v).strip().upper().startswith("UNNAMED:") else v
+        )
+
+    # Garante TODAS as colunas canonicas do _MAP_REPASSE, nao apenas um subconjunto.
+    # Isso evita que colunas ausentes no arquivo fisico (ex: NrAtendimento) sejam
+    # omitidas do CSV de saida. Derivado automaticamente do mapa - sem listas manuais.
+    for col in _COLUNAS_CANONICAS_REPASSE:
         if col not in df.columns:
             df[col] = ""
 
@@ -824,8 +859,11 @@ def _processar_aba_repasse(df: pd.DataFrame, nome_aba: str) -> pd.DataFrame:
     df["ValorLiberado"] = df["ValorLiberado"].apply(_padronizar_valor)
     df["TipoArquivo"]   = "REPASSE"
     df["AbaOrigemDados"] = f"ABA: {nome_aba}"
-    # Remove lixo de colunas extras
-    lixo = [c for c in df.columns if re.match(r"^Extra_\d+$", str(c))]
+
+    # Remove colunas lixo: Extra_N e duplicatas pandas (sufixo .1, .2, ...)
+    # Alinhado com o mesmo tratamento ja feito em _processar_aba_producao
+    lixo = [c for c in df.columns
+            if re.match(r"^Extra_\d+$", str(c)) or re.search(r"\.\d+$", str(c))]
     df.drop(columns=lixo, inplace=True, errors="ignore")
     return df
 
@@ -943,6 +981,8 @@ def transformar_csv_arquivo(
     - Coluna QTD incluída; preenchida com "0" quando ausente na aba de origem
     - Abas com formato legado 2025 (EXAME REALIZADO 1 / EXAME REALIZADO 2) têm
       "EXAME REALIZADO 2" tratado como linha extra de procedimento
+    - Todas as colunas canônicas do _MAP_REPASSE são sempre incluídas no CSV de REPASSE,
+      mesmo que o arquivo físico não as contenha (ficam vazias)
 
     Args:
         conteudo_texto:   Texto extraído por extract_text_from_file.
@@ -1092,7 +1132,6 @@ SINONIMOS_PROCEDIMENTOS = {
     "ENDOSCOPIA": ["EDA", "ENDOSCOPIA DIGESTIVA ALTA", "ESOFAGOGASTRODUODENOSCOPIA", "ESOFAGO GASTRO DUODENOSCOPIA"],
     "EDA": ["ENDOSCOPIA", "ENDOSCOPIA DIGESTIVA ALTA", "ESOFAGOGASTRODUODENOSCOPIA"],
     "ENDOCOSPIA": ["ENDOSCOPIA"],  # Typo
-    "ENDOSCOPIA": ["ENDOSCOPIA"],  # Typo
     "ENDDOSCOPIA": ["ENDOSCOPIA"],  # Typo
     "ESOFAGOGASTRODUODENOSCOPIA": ["ENDOSCOPIA", "EDA"],
     "ESOFAGO GASTRO DUODENOSCOPIA": ["ENDOSCOPIA", "EDA"],
@@ -1440,211 +1479,232 @@ def _determinar_status_correlacao(valor_liberado: float, tem_match: bool) -> str
 def correlacionar_csv_arquivos(csv_producao: str, csv_repasse: str, limiar_similaridade: float = 0.65) -> str:
     """
     Correlaciona dois CSVs (PRODUCAO e REPASSE) usando chave composta otimizada.
-    
-    Otimizações implementadas:
-    - Índice hash para busca O(1) por Data+Paciente
-    - Fallback por NrAtendimento quando não encontra por nome
-    - Normalização de nomes sem acentos e caracteres especiais
+
+    Garantias de schema:
+    - TODAS as colunas canonicas de _MAP_PRODUCAO aparecem com sufixo _PRODUCAO
+    - TODAS as colunas canonicas de _MAP_REPASSE aparecem com sufixo _REPASSE
+    - Colunas ausentes no arquivo fisico ficam vazias — nunca omitidas
+
+    Otimizacoes implementadas:
+    - Indice hash para busca O(1) por Data+Paciente
+    - Fallback por NrAtendimento quando nao encontra por nome
+    - Normalizacao de nomes sem acentos e caracteres especiais
     - Cache de similaridade de procedimentos
-    - Busca com tolerância de ±1 dia
-    
+    - Busca com tolerancia de +-1 dia
+
     Args:
         csv_producao: CSV padronizado da PRODUCAO
         csv_repasse: CSV padronizado do REPASSE
         limiar_similaridade: Threshold para match de procedimento (0.0-1.0)
-    
+
     Returns:
-        CSV correlacionado com sufixos _PRODUCAO e _REPASSE nas colunas
+        CSV correlacionado com sufixos _PRODUCAO e _REPASSE em todas as colunas
     """
     try:
-        # Carrega DataFrames
+        # ── Carrega DataFrames ────────────────────────────────────────────────
         df_prod = pd.read_csv(io.StringIO(csv_producao), dtype=str)
-        df_rep = pd.read_csv(io.StringIO(csv_repasse), dtype=str)
-        
+        df_rep  = pd.read_csv(io.StringIO(csv_repasse),  dtype=str)
         df_prod.fillna("", inplace=True)
-        df_rep.fillna("", inplace=True)
-        
-        logger.info(f"Correlação: {len(df_prod)} linhas PRODUCAO, {len(df_rep)} linhas REPASSE")
-        
-        # Normaliza colunas essenciais
+        df_rep.fillna("",  inplace=True)
+
+        logger.info(f"Correlacao: {len(df_prod)} linhas PRODUCAO, {len(df_rep)} linhas REPASSE")
+
+        # ── Deriva schemas canonicos a partir dos mapas ───────────────────────
+        # Todas as colunas canonicas de cada mapa (valores unicos, ordem estavel)
+        _COLS_PROD = list(dict.fromkeys(
+            list(_MAP_PRODUCAO.values()) +
+            list(_MAP_PRODUCAO_2025_NOVO.values()) +
+            list(_MAP_PRODUCAO_2026.values())
+        ))
+        # Remove Procedimento2 — coluna interna descartada antes de chegar aqui
+        _COLS_PROD = [c for c in _COLS_PROD if c != "Procedimento2"]
+        # AbaOrigemDados e adicionada pelo processador, nao consta nos mapas — inclui explicitamente
+        if "AbaOrigemDados" not in _COLS_PROD:
+            _COLS_PROD.append("AbaOrigemDados")
+
+        _COLS_REP = list(dict.fromkeys(_MAP_REPASSE.values()))
+        # AbaOrigemDados e adicionada pelo processador, nao consta no _MAP_REPASSE — inclui explicitamente
+        if "AbaOrigemDados" not in _COLS_REP:
+            _COLS_REP.append("AbaOrigemDados")
+
+        # Colunas internas/de controle que nao devem aparecer no CSV final
+        _EXCLUIR_PROD = {"TipoArquivo"}
+        _EXCLUIR_REP  = {"TipoArquivo", "_matched"}
+
+        # Garante que todas as colunas canonicas existam nos DataFrames
+        # (arquivo fisico pode nao ter todas)
+        for col in _COLS_PROD:
+            if col not in df_prod.columns:
+                df_prod[col] = ""
+        for col in _COLS_REP:
+            if col not in df_rep.columns:
+                df_rep[col] = ""
+
+        # ── Normaliza datas ───────────────────────────────────────────────────
         for df in [df_prod, df_rep]:
             if "Data" in df.columns:
                 df["Data"] = df["Data"].apply(_padronizar_data)
-        
-        # Cria índices para busca rápida no REPASSE
-        indice_repasse = _criar_indice_repasse(df_rep)
-        indice_atendimento = _criar_indice_repasse_atendimento(df_rep)
-        logger.info(f"Índice por nome: {len(indice_repasse)} chaves | Índice por atendimento: {len(indice_atendimento)} chaves")
-        
-        # Marca linhas do REPASSE como não usadas
+
+        # ── Cria indices de busca rapida ──────────────────────────────────────
+        indice_repasse      = _criar_indice_repasse(df_rep)
+        indice_atendimento  = _criar_indice_repasse_atendimento(df_rep)
+        logger.info(f"Indice por nome: {len(indice_repasse)} chaves | por atendimento: {len(indice_atendimento)} chaves")
+
         df_rep["_matched"] = False
-        
-        # Cache de similaridade
-        cache_similaridade = {}
-        
-        # Lista de resultados
-        linhas_resultado = []
-        matches_encontrados = 0
+        cache_similaridade: dict = {}
+
+        linhas_resultado       = []
+        matches_encontrados    = 0
         matches_por_atendimento = 0
-        
-        # Para cada linha da PRODUCAO, busca match no REPASSE
-        for idx_prod, row_prod in df_prod.iterrows():
-            data_prod = row_prod.get("Data", "")
-            paciente_prod = row_prod.get("Paciente", "")
-            paciente_norm = _normalizar_nome_paciente(paciente_prod)
+
+        # ── Itera PRODUCAO e busca match no REPASSE ───────────────────────────
+        for _, row_prod in df_prod.iterrows():
+            data_prod     = row_prod.get("Data", "")
+            paciente_norm = _normalizar_nome_paciente(row_prod.get("Paciente", ""))
             nr_atend_prod = str(row_prod.get("NrAtendimento", "")).strip()
-            proc_prod = row_prod.get("Procedimento", "")
-            
-            # Busca candidatos no índice (mesma data + mesmo paciente)
-            candidatos = []
+            proc_prod     = row_prod.get("Procedimento", "")
+
+            candidatos   = []
             metodo_busca = "NOME"
-            
+
             # Busca exata por nome
             key_exata = (data_prod, paciente_norm)
             if key_exata in indice_repasse:
                 candidatos.extend(indice_repasse[key_exata])
-            
-            # Busca com tolerância de ±1 dia por nome
+
+            # Busca com tolerancia de +-1 dia por nome
             if not candidatos:
                 try:
                     data_dt = datetime.strptime(data_prod, "%d/%m/%Y")
                     for delta in [-1, 1]:
-                        data_tolerancia = (data_dt + timedelta(days=delta)).strftime("%d/%m/%Y")
-                        key_tolerancia = (data_tolerancia, paciente_norm)
-                        if key_tolerancia in indice_repasse:
-                            candidatos.extend(indice_repasse[key_tolerancia])
-                except:
+                        key_tol = ((data_dt + timedelta(days=delta)).strftime("%d/%m/%Y"), paciente_norm)
+                        if key_tol in indice_repasse:
+                            candidatos.extend(indice_repasse[key_tol])
+                except Exception:
                     pass
-            
-            # FALLBACK: Busca por NrAtendimento se não encontrou por nome
+
+            # Fallback: busca por NrAtendimento
             if not candidatos and nr_atend_prod and nr_atend_prod not in ("", "nan", "NaN"):
                 metodo_busca = "ATENDIMENTO"
                 key_atend = (data_prod, nr_atend_prod)
                 if key_atend in indice_atendimento:
                     candidatos.extend(indice_atendimento[key_atend])
-                
-                # Busca com tolerância de ±1 dia por atendimento
                 if not candidatos:
                     try:
                         data_dt = datetime.strptime(data_prod, "%d/%m/%Y")
                         for delta in [-1, 1]:
-                            data_tolerancia = (data_dt + timedelta(days=delta)).strftime("%d/%m/%Y")
-                            key_tolerancia = (data_tolerancia, nr_atend_prod)
-                            if key_tolerancia in indice_atendimento:
-                                candidatos.extend(indice_atendimento[key_tolerancia])
-                    except:
+                            key_tol = ((data_dt + timedelta(days=delta)).strftime("%d/%m/%Y"), nr_atend_prod)
+                            if key_tol in indice_atendimento:
+                                candidatos.extend(indice_atendimento[key_tol])
+                    except Exception:
                         pass
-            
-            # Busca melhor match entre os candidatos
+
+            # Seleciona melhor match por similaridade de procedimento
             melhor_match = None
             melhor_score = 0.0
-            melhor_idx = None
-            
+            melhor_idx   = None
+
             for idx_rep in candidatos:
                 if df_rep.at[idx_rep, "_matched"]:
                     continue
-                
-                row_rep = df_rep.iloc[idx_rep]
-                proc_rep = row_rep.get("Procedimento", "")
-                
-                # Calcula similaridade do procedimento (com cache)
-                sim = _similaridade_procedimento(proc_prod, proc_rep, cache_similaridade)
-                
+                sim = _similaridade_procedimento(proc_prod, df_rep.iloc[idx_rep].get("Procedimento", ""), cache_similaridade)
                 if sim >= limiar_similaridade and sim > melhor_score:
                     melhor_score = sim
-                    melhor_match = row_rep
-                    melhor_idx = idx_rep
-            
-            # Monta linha correlacionada
-            linha_corr = {}
-            
-            # Cria chave de correlação com NrAtendimento
-            proc_normalizado = _normalizar_procedimento(proc_prod)
-            chave_correlacao = f"{paciente_norm}_{nr_atend_prod}_{data_prod}_{proc_normalizado}".replace(" ", "-")
-            linha_corr["ChaveCorrelacao"] = chave_correlacao
-            
-            # Adiciona colunas da PRODUCAO com sufixo
-            for col in df_prod.columns:
-                if col != "TipoArquivo":
-                    linha_corr[f"{col}_PRODUCAO"] = row_prod[col]
-            
-            # Se encontrou match, adiciona colunas do REPASSE
+                    melhor_match = df_rep.iloc[idx_rep]
+                    melhor_idx   = idx_rep
+
+            # ── Monta linha correlacionada ────────────────────────────────────
+            proc_norm = _normalizar_procedimento(proc_prod)
+            linha_corr: dict = {
+                "ChaveCorrelacao": f"{paciente_norm}_{nr_atend_prod}_{data_prod}_{proc_norm}".replace(" ", "-")
+            }
+
+            # Todas as colunas canonicas da PRODUCAO com sufixo _PRODUCAO
+            for col in _COLS_PROD:
+                if col not in _EXCLUIR_PROD:
+                    linha_corr[f"{col}_PRODUCAO"] = row_prod.get(col, "")
+
+            # ── StatusCorrelacao e SimilaridadeProcedimento entre PRODUCAO e REPASSE ──
             if melhor_match is not None:
                 df_rep.at[melhor_idx, "_matched"] = True
                 matches_encontrados += 1
                 if metodo_busca == "ATENDIMENTO":
                     matches_por_atendimento += 1
-                
-                for col in df_rep.columns:
-                    if col not in ["_matched", "TipoArquivo"]:
-                        if col not in df_prod.columns or col in ["Data", "Paciente", "Procedimento"]:
-                            linha_corr[f"{col}_REPASSE"] = melhor_match[col]
-                
-                # Determina StatusCorrelacao
                 valor_rep = _extrair_valor_numerico(melhor_match.get("ValorLiberado", "0"))
-                status = _determinar_status_correlacao(valor_rep, True)
+                status    = _determinar_status_correlacao(valor_rep, True)
                 linha_corr["SimilaridadeProcedimento"] = f"{melhor_score:.2f}"
             else:
                 status = "NAO_FATURADO_NO_REPASSE"
                 linha_corr["SimilaridadeProcedimento"] = "0.00"
-            
+
             linha_corr["StatusCorrelacao"] = status
+
+            # Todas as colunas canonicas do REPASSE com sufixo _REPASSE
+            if melhor_match is not None:
+                for col in _COLS_REP:
+                    if col not in _EXCLUIR_REP:
+                        linha_corr[f"{col}_REPASSE"] = melhor_match.get(col, "")
+            else:
+                for col in _COLS_REP:
+                    if col not in _EXCLUIR_REP:
+                        linha_corr[f"{col}_REPASSE"] = ""
+
             linhas_resultado.append(linha_corr)
-        
+
         logger.info(f"Matches encontrados: {matches_encontrados}/{len(df_prod)} ({matches_encontrados/len(df_prod)*100:.1f}%)")
         logger.info(f"Matches por atendimento: {matches_por_atendimento}")
-        
-        # Adiciona linhas do REPASSE que não foram matcheadas
+
+        # ── Linhas do REPASSE sem match → inseridas no final ──────────────────
         nao_matcheados = 0
         for idx_rep, row_rep in df_rep.iterrows():
-            if not row_rep["_matched"]:
-                nao_matcheados += 1
-                linha_corr = {}
-                
-                # Cria chave de correlação com dados do REPASSE
-                data_rep = row_rep.get("Data", "")
-                paciente_rep = row_rep.get("Paciente", "")
-                paciente_norm = _normalizar_nome_paciente(paciente_rep)
-                nr_atend_rep = str(row_rep.get("NrAtendimento", "")).strip()
-                proc_rep = row_rep.get("Procedimento", "")
-                proc_normalizado = _normalizar_procedimento(proc_rep)
-                chave_correlacao = f"{paciente_norm}_{nr_atend_rep}_{data_rep}_{proc_normalizado}".replace(" ", "-")
-                linha_corr["ChaveCorrelacao"] = chave_correlacao
-                
-                # Colunas da PRODUCAO vazias
-                for col in df_prod.columns:
-                    if col != "TipoArquivo":
-                        linha_corr[f"{col}_PRODUCAO"] = ""
-                
-                # Colunas do REPASSE preenchidas
-                for col in df_rep.columns:
-                    if col not in ["_matched", "TipoArquivo"]:
-                        if col not in df_prod.columns or col in ["Data", "Paciente", "Procedimento"]:
-                            linha_corr[f"{col}_REPASSE"] = row_rep[col]
-                
-                linha_corr["StatusCorrelacao"] = "REPASSE_NAO_IDENTIFICADO_NA_PRODUCAO"
-                linha_corr["SimilaridadeProcedimento"] = "0.00"
-                linhas_resultado.append(linha_corr)
-        
-        logger.info(f"Linhas REPASSE não matcheadas: {nao_matcheados}")
+            if row_rep["_matched"]:
+                continue
+            nao_matcheados += 1
+
+            paciente_norm  = _normalizar_nome_paciente(row_rep.get("Paciente", ""))
+            nr_atend_rep   = str(row_rep.get("NrAtendimento", "")).strip()
+            data_rep       = row_rep.get("Data", "")
+            proc_norm      = _normalizar_procedimento(row_rep.get("Procedimento", ""))
+
+            linha_corr = {
+                "ChaveCorrelacao": f"{paciente_norm}_{nr_atend_rep}_{data_rep}_{proc_norm}".replace(" ", "-")
+            }
+
+            # PRODUCAO vazia (schema completo, tudo vazio)
+            for col in _COLS_PROD:
+                if col not in _EXCLUIR_PROD:
+                    linha_corr[f"{col}_PRODUCAO"] = ""
+
+            # StatusCorrelacao e SimilaridadeProcedimento entre PRODUCAO e REPASSE
+            linha_corr["SimilaridadeProcedimento"] = "0.00"
+            linha_corr["StatusCorrelacao"]         = "REPASSE_NAO_IDENTIFICADO_NA_PRODUCAO"
+
+            # REPASSE preenchido (schema completo)
+            for col in _COLS_REP:
+                if col not in _EXCLUIR_REP:
+                    linha_corr[f"{col}_REPASSE"] = row_rep.get(col, "")
+
+            linhas_resultado.append(linha_corr)
+
+        logger.info(f"Linhas REPASSE nao matcheadas: {nao_matcheados}")
         logger.info(f"Cache de similaridade: {len(cache_similaridade)} entradas")
-        
-        # Cria DataFrame final
+
+        # ── Monta DataFrame final e ordena por data ───────────────────────────
         df_final = pd.DataFrame(linhas_resultado)
-        
-        # Ordena por Data_PRODUCAO (ou Data_REPASSE se PRODUCAO vazia)
+        df_final.fillna("", inplace=True)
+
         if "Data_PRODUCAO" in df_final.columns:
             df_final["_sort_date"] = df_final.apply(
                 lambda r: r["Data_PRODUCAO"] if r["Data_PRODUCAO"] else r.get("Data_REPASSE", ""),
-                axis=1
+                axis=1,
             )
-            df_final = df_final.sort_values("_sort_date")
+            df_final.sort_values("_sort_date", inplace=True)
             df_final.drop(columns=["_sort_date"], inplace=True)
-        
+
         return df_final.to_csv(index=False, encoding="utf-8")
-        
+
     except Exception as e:
-        logger.error(f"Erro na correlação local: {e}", exc_info=True)
+        logger.error(f"Erro na correlacao local: {e}", exc_info=True)
         return ""
 
 
@@ -2176,8 +2236,6 @@ def main():
             for doc in extratos_texto:
                 with st.expander(doc["filename"]):
                     text = doc["content"]
-                    #st.text(text[:2000])
-                    #st.text(text)
                     st.text_area("Dados RAW", value=text, height=400)
                     c1, c2, c3 = st.columns(3)
                     c1.metric("Caracteres", len(text))
@@ -2409,12 +2467,9 @@ def main():
             combined_output = ""
             for file, result in results.items():
                 st.subheader(file)
-                #st.markdown(result)
-                #combined_output += f"# Resultado: {file}\n\n{result}\n\n{'-' * 36}\n\n"
 
                 st.divider()
                 st.subheader("📄 Resultado Consolidado")
-                #st.text_area("Relatório completo", value=combined_output, height=400)
                 st.text_area("Relatório completo", value={result}, height=400)
                 c1, c2, c3 = st.columns(3)
                 c1.metric("Caracteres", len(result))
