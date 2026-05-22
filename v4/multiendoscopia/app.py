@@ -1754,6 +1754,162 @@ _TUSS_LOOKUP_PATH = _TUSS_DIR / "tuss_lookup_table.csv"
 _TUSS_VALORES_PATH = _TUSS_DIR / "tuss_valores.csv"
 _TUSS_XLSX_PATH    = _TUSS_DIR / "TUSS (ATUALIZADO).xlsx"
 
+# Mapeamento PRODUCAO→TUSS embutido. Atualizar quando o XLSX mudar (re-executar _gerar_tabela_tuss).
+_TABELA_TUSS_EMBUTIDA: dict[str, dict] = {
+    'ANUSCOPIA_': {"TipoCobranca": 'sem_mapeamento_tuss', "CodigosTUSS": '', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Sem correspondência exata TUSS'},
+    'COLONO_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201082', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia (Inclui A Retossigmoidoscopia)'},
+    'COLONO_ANATOMO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Polipectomia'},
+    'COLONO_ANATOMO PATLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202666', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E/Ou Citologia'},
+    'COLONO_ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202666', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E/Ou Citologia'},
+    'COLONO_ANATOMO PATOLOGICO+MUCOSECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202712', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Mucosectomia'},
+    'COLONO_ANATOMO PATOLOGICO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Polipectomia'},
+    'COLONO_ANATOMO PATOLOGICO+TATUAGEM': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202135', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Tatuagem'},
+    'COLONO_ANATOMO PATOLOGICO+MUCOSECTOMIA+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202712, 40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia, Mucosectomia E Polipectomia'},
+    'COLONO_ANATOMO PATOLOGICO+POLIPO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Polipectomia'},
+    'COLONO_ANATOMO+MUCOSECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202712', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Mucosectomia'},
+    'COLONO_ANATOMO+POLIOECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Polipectomia'},
+    'COLONO_ANATOMOPATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202666', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E/Ou Citologia'},
+    'COLONO_ANATOMOPATOLOGICO+POLIPO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Polipectomia'},
+    'COLONO_BRADES': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201082', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia (Inclui A Retossigmoidoscopia)'},
+    'COLONO_MUCOSECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202712', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Mucosectomia'},
+    'COLONO_POLEPECTOMIA+MUCOSECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202542, 40202712', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Polipectomia E Mucosectomia'},
+    'COLONO_POLIECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Polipectomia De Cólon (Independente Do Número De Pólipos)'},
+    'COLONO_POLIPECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Polipectomia De Cólon (Independente Do Número De Pólipos)'},
+    'COLONO_POLIPECTOMIA+MUCOSECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202542, 40202712', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Polipectomia E Mucosectomia'},
+    'COLONO_POLIPOECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Polipectomia De Cólon (Independente Do Número De Pólipos)'},
+    'COLONO_RETIRADA DE CORPO ESRANHO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202569', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Retirada de corpo estranho do cólon'},
+    'COLONO_TESTE DE UREASE': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201082, 40202615', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia + Teste De Urease Para Pesquisa De Helicobacter Pylori'},
+    'COLONO_TESTE DE UREASE+ANATOMO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201082, 40202615', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia + Teste De Urease Para Pesquisa De Helicobacter Pylori'},
+    'COLONO_TESTE UREASE': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201082, 40202615', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia + Teste De Urease Para Pesquisa De Helicobacter Pylori'},
+    'COLONOCOPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201082', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia (Inclui A Retossigmoidoscopia)'},
+    'COLONOCOPIA_POLIPECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Polipectomia De Cólon (Independente Do Número De Pólipos)'},
+    'COLONOSCOPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201082', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia (Inclui A Retossigmoidoscopia)'},
+    'COLONOSCOPIA_-': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201082', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia (Inclui A Retossigmoidoscopia)'},
+    'COLONOSCOPIA_ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202666', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E/Ou Citologia'},
+    'COLONOSCOPIA_ANATOMO PATOLOGICO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202666, 40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E Polipectomia'},
+    'COLONOSCOPIA_BIOPSIA SERIADO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202666', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Biópsia E/Ou Citologia'},
+    'COLONOSCOPIA_DESCOMPRESSAO COLONICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202143', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Descompressão colônica por colonoscopia'},
+    'COLONOSCOPIA_HEMOSTASIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202313', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Hemostasias de cólon'},
+    'COLONOSCOPIA_MUCOSECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202712', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia Com Mucosectomia'},
+    'COLONOSCOPIA_POLIPECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202542', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Polipectomia De Cólon (Independente Do Número De Pólipos)'},
+    'COLONOSCOPIA_TESTE DE UREASE': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201082, 40202615', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia + Teste De Urease Para Pesquisa De Helicobacter Pylori'},
+    'COLONOSCOPIA_TESTE DE UREASE - NEGATIVO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201082, 40202615', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia + Teste De Urease Para Pesquisa De Helicobacter Pylori'},
+    'COLONOSCOPIA_TESTE UREASE - NEGATIVO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201082, 40202615', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia + Teste De Urease Para Pesquisa De Helicobacter Pylori'},
+    'COLONOSCOPIA_TESTE UREASE+ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201082, 40202615', "codigo_base_proc_principal": '40201082', "Descricao_REPASSE": 'Colonoscopia + Teste De Urease Para Pesquisa De Helicobacter Pylori'},
+    'CPRE_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201074', "codigo_base_proc_principal": '40201074', "Descricao_REPASSE": 'Colangiopancreatografia Retrógrada Endoscópica'},
+    'CPRE_ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201074, 40202038', "codigo_base_proc_principal": '40201074', "Descricao_REPASSE": 'Colangiopancreatografia Retrógrada Endoscópica Com Biópsia'},
+    'CPRE_COLOCACAO DE PROTESE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40813320', "codigo_base_proc_principal": '40201074', "Descricao_REPASSE": 'Colocação De Stent Biliar'},
+    'CPRE_PROTESE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40813320', "codigo_base_proc_principal": '40201074', "Descricao_REPASSE": 'Colocação De Stent Biliar'},
+    'CPRE_RETIRADA DE PROTESE BILIAR': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201074', "codigo_base_proc_principal": '40201074', "Descricao_REPASSE": 'Colangiopancreatografia Retrógrada Endoscópica'},
+    'ECOEDA ALTA C+PUNCAO_ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202240, 40202038', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Ecoendoscopia Alta Com Punção E Biópsia'},
+    'ECOEDA ALTA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201104', "codigo_base_proc_principal": '40201104', "Descricao_REPASSE": 'Ecoendoscopia alta sem punção'},
+    'ECOENDOCOPIA ALTA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201104', "codigo_base_proc_principal": '40201104', "Descricao_REPASSE": 'Ecoendoscopia alta sem punção'},
+    'ECOENDOSCOPIA BAIXA_': {"TipoCobranca": 'sem_mapeamento_tuss', "CodigosTUSS": '', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Não há código TUSS específico para baixa na tabela (apenas alta)'},
+    'ECOENDOSCOPIA ALTA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201104', "codigo_base_proc_principal": '40201104', "Descricao_REPASSE": 'Ecoendoscopia alta sem punção'},
+    'ECOENDOSCOPIA ALTA_ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201104, 40202038', "codigo_base_proc_principal": '40201104', "Descricao_REPASSE": 'Ecoendoscopia Alta Com Biópsia E/Ou Citologia'},
+    'ECOENDOSCOPIA ALTA_ANATOMOPATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201104, 40202038', "codigo_base_proc_principal": '40201104', "Descricao_REPASSE": 'Ecoendoscopia Alta Com Biópsia E/Ou Citologia'},
+    'ECOENDOSCOPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201104', "codigo_base_proc_principal": '40201104', "Descricao_REPASSE": 'Ecoendoscopia alta sem punção'},
+    'ECOENDOSCOPIA_ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40201104, 40202038', "codigo_base_proc_principal": '40201104', "Descricao_REPASSE": 'Ecoendoscopia Alta Com Biópsia E/Ou Citologia'},
+    'ENCOSCOPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201120', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta'},
+    'ENCOSCOPIA_TESTE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDDOSCOPIA_ANATOMO PATOLOGICO+TESTE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOCOSPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201120', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta'},
+    'ENDOSCOPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201120', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta'},
+    'ENDOSCOPIA_ENDOSCOPIA': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201120', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta'},
+    'ENDOSCOPIA_UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_ANATOMIA PATOLOGICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202038', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E/Ou Citologia'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202038', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E/Ou Citologia'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202038', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E/Ou Citologia'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202038, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Biópsia E Polipectomia'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO+HP+CICATRIZ GASTRICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO+TESTE DE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO TESTE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO+HPYLORI+BUBO GASTRICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO+TESTE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_ANATOMO PATOLOGICO+POLIPO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202038, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Biópsia E Polipectomia'},
+    'ENDOSCOPIA_ANATOMO+MUCOSECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202038, 40202470', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Biópsia E Mucosectomia'},
+    'ENDOSCOPIA_ANATOMO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202038, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Biópsia E Polipectomia'},
+    'ENDOSCOPIA_ANATOMOPATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202038', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E/Ou Citologia'},
+    'ENDOSCOPIA_ANATOMOPATOLOGICO+TESTE DE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_BIOPSIA HEPATICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202038', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E/Ou Citologia'},
+    'ENDOSCOPIA_COM DILATACAO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202186', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Dilatação De Esôfago Com Balão Pneumático'},
+    'ENDOSCOPIA_CPRE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40201074', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Colangiopancreatografia Retrógrada Endoscópica'},
+    'ENDOSCOPIA_DILATACAO DE OSTOMIA+TROCA DE GTT': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia endoscópica'},
+    'ENDOSCOPIA_DILATACAO ESOFAGICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202186', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Dilatação De Esôfago Com Balão Pneumático'},
+    'ENDOSCOPIA_DILATACAO PNEUMATICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202186', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Dilatação De Esôfago Com Balão Pneumático'},
+    'ENDOSCOPIA_GASTROSTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia Endoscópica'},
+    'ENDOSCOPIA_GASTROSTOMIA (1ª PASSGEM)': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia Endoscópica'},
+    'ENDOSCOPIA_GTT': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia Endoscópica'},
+    'ENDOSCOPIA_GTT 1ª PASSAGEM': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia Endoscópica'},
+    'ENDOSCOPIA_HEMOCLIP': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202291', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Hemostasia mecânica do esôfago, estômago ou duodeno'},
+    'ENDOSCOPIA_HEMOSTASIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202291', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Hemostasia mecânica do esôfago, estômago ou duodeno'},
+    'ENDOSCOPIA_HEMOSTASIA LEVE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202291', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Hemostasia mecânica do esôfago, estômago ou duodeno'},
+    'ENDOSCOPIA_HPYLORI': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_HPYLORI+POLIPOS GASTRICOS+LIGADURA ELASTICA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550, 40202453', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease, Polipectomia E Ligadura'},
+    'ENDOSCOPIA_LIGADURA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202453', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Ligadura Elástica Do Esôfago, Estômago Ou Duodeno'},
+    'ENDOSCOPIA_LIGADURA DE VARIZES ESOFAGO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202453', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Ligadura Elástica Do Esôfago, Estômago Ou Duodeno'},
+    'ENDOSCOPIA_LIGADURA ELASTICA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202453', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Ligadura Elástica Do Esôfago, Estômago Ou Duodeno'},
+    'ENDOSCOPIA_MUCOSECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202470', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Mucosectomia Do Esôfago, Estômago Ou Duodeno'},
+    'ENDOSCOPIA_PASSAGEM SNE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Passagem de sonda naso-enteral'},
+    'ENDOSCOPIA_PASSAGEM DE SNE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Passagem de sonda naso-enteral'},
+    'ENDOSCOPIA_PASSAGEM DE SONDA NASO ENTERAL': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Passagem de sonda naso-enteral'},
+    'ENDOSCOPIA_PASSAGEM DE SONDA NASOENTERAL': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Passagem de sonda naso-enteral'},
+    'ENDOSCOPIA_PASSAGEN SNE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Passagem de sonda naso-enteral'},
+    'ENDOSCOPIA_PLASMA DE ARGONIO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40201376', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Aplicação de plasma de argônio por endoscopia digestiva alta'},
+    'ENDOSCOPIA_POLIPECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Polipectomia Do Esôfago, Estômago Ou Duodeno (Independente Do Número De Pólipos)'},
+    'ENDOSCOPIA_REMOCAO DE BALAO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202577', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Retirada de corpo estranho do esôfago, estômago ou duodeno'},
+    'ENDOSCOPIA_RETIRADA DE CORPO ESTRANHO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202577', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Retirada de corpo estranho do esôfago, estômago ou duodeno'},
+    'ENDOSCOPIA_RETIRADA DE GTT': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202577', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Retirada de corpo estranho do esôfago, estômago ou duodeno'},
+    'ENDOSCOPIA_TESTE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE DE UEASE+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease E Polipectomia'},
+    'ENDOSCOPIA_TESTE DE UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE DE UREASE - NEGATIVO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE DE UREASE+ANATOMO PATOLOGICO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease E Polipectomia'},
+    'ENDOSCOPIA_TESTE DE UREASE - POSITIVO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE DE UREASE+ANATOMO+POLIOECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease E Polipectomia'},
+    'ENDOSCOPIA_TESTE DE UREASE+ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE DE UREASE+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease E Polipectomia'},
+    'ENDOSCOPIA_TESTE DE UREASE+ANATOMO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE DE UREASE+ANATOMO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease E Polipectomia'},
+    'ENDOSCOPIA_TESTE DE UREASE+POLIPECTOMIA+ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease E Polipectomia'},
+    'ENDOSCOPIA_TESTE DE UREASEA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE DE URESE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE E UREASE': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE UREASE - NEGATIVO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE UREASE - POSITIVO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE UREASE+ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202615', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Digestiva Alta Com Biópsia E Teste De Urease (Pesquisa Helicobacter Pylori)'},
+    'ENDOSCOPIA_TESTE UREASE+ANATOMO+POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202615, 40202550', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Endoscopia Alta Com Urease E Polipectomia'},
+    'ENDOSCOPIA_TROCA DE GTT (BOTTON)': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia endoscópica'},
+    'ENDOSCOPIA_TROCA DE GTT': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia endoscópica'},
+    'ENDOSCOPIA_TROCA GTT': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40201120', "Descricao_REPASSE": 'Gastrostomia endoscópica'},
+    'EXAME REALIZADO_PROCEDIMENTOS ADICIONAIS': {"TipoCobranca": 'sem_mapeamento_tuss', "CodigosTUSS": '', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Erro de leitura de cabeçalho do PDF'},
+    'GASTROSTOMIA 1ª PASSAGEM_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia Endoscópica'},
+    'GASTROSTOMIA ENDOSCOPICA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia endoscópica'},
+    'GASTROSTOMIA ENDOSCOPICA_ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202283, 40202038', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia Endoscópica Com Biópsia E/Ou Citologia'},
+    'GASTROSTOMIA ENDOSCOPICA_GASTROSTOMIA+ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202283, 40202038', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia Endoscópica Com Biópsia E/Ou Citologia'},
+    'GASTROSTOMIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia Endoscópica'},
+    'GTT_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia Endoscópica'},
+    'HEMOSTASIA_POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202291, 40202550', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Endoscopia Alta Com Hemostasia E Polipectomia'},
+    'LIGADURA ELASTICA_HEMOSTASIA LEVE': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202453, 40202291', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Endoscopia Alta Com Ligadura E Hemostasia'},
+    'MUCOSECTOMIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202470', "codigo_base_proc_principal": '40202470', "Descricao_REPASSE": 'Mucosectomia Do Esôfago, Estômago Ou Duodeno'},
+    'MUCOSECTOMIA_POLIPECTOMIA': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202470, 40202550', "codigo_base_proc_principal": '40202470', "Descricao_REPASSE": 'Endoscopia Alta Com Mucosectomia E Polipectomia'},
+    'PASSAGEM DE SNE_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40202534', "Descricao_REPASSE": 'Passagem de sonda naso-enteral'},
+    'PASSAGEM DE SONDA POR ENDOSCOPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40202534', "Descricao_REPASSE": 'Passagem de Sondas por Endoscopia'},
+    'PASSAGEM SNE_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202534', "codigo_base_proc_principal": '40202534', "Descricao_REPASSE": 'Passagem de sonda naso-enteral'},
+    'RETIRADA DE PROTESE TRANSPAPILAR_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201074', "codigo_base_proc_principal": '40201074', "Descricao_REPASSE": 'Colangiopancreatografia Retrógrada Endoscópica'},
+    'RETO_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201171', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia Flexível'},
+    'RETO_ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202690', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia flexível com biópsia e/ou citologia'},
+    'RETOSIGMOIDECTOMIA_ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202690', "codigo_base_proc_principal": '', "Descricao_REPASSE": 'Retossigmoidoscopia flexível com biópsia e/ou citologia'},
+    'RETOSSIGMOIDECTOMIA FLEXIVEL_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201171', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia Flexível'},
+    'RETOSSIGMOIDECTOMIA FLEXIVEL_ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202690', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia flexível com biópsia e/ou citologia'},
+    'RETOSSIGMOIDOSCOPIA FLEXIVEL_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201171', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia Flexível'},
+    'RETOSSIGMOIDOSCOPIA_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40201171', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia Flexível'},
+    'RETOSSIGMOIDOSCOPIA_ANATOMO PATOLOGICO': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202690', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia flexível com biópsia e/ou citologia'},
+    'RETOSSIGMOIDOSCOPIA_POLIPECTOMIA': {"TipoCobranca": 'unico_cod_tuss_inclui_proc_adicional_e_principal', "CodigosTUSS": '40202682', "codigo_base_proc_principal": '40201171', "Descricao_REPASSE": 'Retossigmoidoscopia Flexível Com Polipectomia'},
+    'TROCA DE GTT_': {"TipoCobranca": 'unico_cod_tuss_somente_proc_principal', "CodigosTUSS": '40202283', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia endoscópica'},
+    'TROCA DE GTT_ANATOMO PATOLOGICO': {"TipoCobranca": 'multiplos_cod_tuss_proced_adicional', "CodigosTUSS": '40202283, 40202038', "codigo_base_proc_principal": '40202283', "Descricao_REPASSE": 'Gastrostomia Endoscópica Com Biópsia E/Ou Citologia'},
+}
+
 # Logo do Hospital São Camilo embutida em base64 (extraída do template original)
 _LOGO_SAOCAMILO_B64 = (
     "/9j/4AAQSkZJRgABAQEAeAB4AAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a"
@@ -2339,19 +2495,20 @@ def _gerar_valores_tuss(
 def _carregar_tabela_tuss() -> dict:
     """
     Carrega tuss_lookup_table.csv como dict {chave_norm → entry}.
-    Auto-gera o CSV a partir do XLSX se o arquivo não existir.
+    Prioridade: arquivo local → XLSX → constante embutida (_TABELA_TUSS_EMBUTIDA).
+    A constante embutida garante funcionamento em Docker sem volume montado.
     """
-    if not _TUSS_LOOKUP_PATH.exists():
-        if _TUSS_XLSX_PATH.exists():
-            logger.info("tuss_lookup_table.csv não encontrado — gerando a partir do XLSX")
-            df = _gerar_tabela_tuss()
-        else:
-            logger.warning("Nem tuss_lookup_table.csv nem TUSS XLSX encontrados")
-            return {}
-    else:
+    if _TUSS_LOOKUP_PATH.exists():
         df = pd.read_csv(_TUSS_LOOKUP_PATH, dtype={"CodigosTUSS": str, "codigo_base_proc_principal": str})
-
-    return {str(r["chave_norm"]): dict(r) for _, r in df.iterrows()}
+        logger.info(f"tabela_tuss carregada do arquivo local ({len(df)} linhas)")
+        return {str(r["chave_norm"]): dict(r) for _, r in df.iterrows()}
+    elif _TUSS_XLSX_PATH.exists():
+        logger.info("tuss_lookup_table.csv não encontrado — gerando a partir do XLSX")
+        df = _gerar_tabela_tuss()
+        return {str(r["chave_norm"]): dict(r) for _, r in df.iterrows()}
+    else:
+        logger.info("tuss_lookup_table.csv não encontrado — usando constante embutida _TABELA_TUSS_EMBUTIDA")
+        return dict(_TABELA_TUSS_EMBUTIDA)
 
 
 @st.cache_data(show_spinner=False)
@@ -2446,48 +2603,72 @@ def _enriquecer_com_valores_tuss(
     desc_lookup: dict,
 ) -> pd.DataFrame:
     """
-    Adiciona ao DataFrame de correlação as colunas:
+    Enriquece o DataFrame de correlação com:
       - ValorEstimado_TUSS: UltimoValor (ou Media) do código esperado, por convênio
-      - DescricaoTUSS: descrição canônica do código TUSS esperado (lookup_table → fallback)
+      - DescricaoTUSS: preserva o que verificar_tuss_adicionais já preencheu via
+        Descricao_REPASSE; completa/melhora via desc_lookup quando disponível.
 
-    Só preenche linhas com StatusTUSS indicando problema de cobrança:
+    ValorEstimado_TUSS é preenchido para status que indicam divergência ou ausência:
       TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES
       TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE
+      TUSS_CODIGO_PRINCIPAL_DIVERGENTE
     Também preenche NAO_FATURADO_NO_REPASSE quando CodigosTUSS_Esperados estiver preenchido.
+    DescricaoTUSS é preenchida/completada para qualquer linha com CodigosTUSS_Esperados.
     """
-    if df.empty or not valores_tuss:
-        df["ValorEstimado_TUSS"] = ""
-        df["DescricaoTUSS"]      = ""
+    if df.empty:
         return df
 
+    # Garante que as colunas existam sem apagar o que verificar_tuss_adicionais já populou
+    if "ValorEstimado_TUSS" not in df.columns:
+        df = df.copy()
+        df["ValorEstimado_TUSS"] = ""
+    if "DescricaoTUSS" not in df.columns:
+        df = df.copy()
+        df["DescricaoTUSS"] = ""
+
+    _STATUS_COM_VALOR = {
+        "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES",
+        "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE",
+        "TUSS_CODIGO_PRINCIPAL_DIVERGENTE",
+    }
+
     vals:  list = [""] * len(df)
-    descs: list = [""] * len(df)
+    # Inicializa preservando DescricaoTUSS já preenchida por verificar_tuss_adicionais
+    descs: list = list(df["DescricaoTUSS"].fillna("").astype(str))
 
     for i, (_, row) in enumerate(df.iterrows()):
-        st_tuss = str(row.get("StatusTUSS", "")).upper()
-        st_corr = str(row.get("StatusCorrelacao", "")).upper()
+        st_tuss = str(row.get("StatusTUSS", "")).strip()
+        st_corr = str(row.get("StatusCorrelacao", "")).strip().upper()
         cod = str(row.get("CodigosTUSS_Esperados", "")).split(",")[0].strip().replace(".0", "")
         if not cod:
             continue
-        elegivel = (
-            st_tuss in ("TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES",
-                        "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE")
+
+        quer_valor = (
+            st_tuss in _STATUS_COM_VALOR
             or st_corr == "NAO_FATURADO_NO_REPASSE"
         )
-        if not elegivel:
+
+        # Sempre tenta completar DescricaoTUSS se ainda vazia
+        if not descs[i]:
+            d = desc_lookup.get(cod, "")
+            if not d and valores_tuss:
+                d = str(valores_tuss.get(cod, {}).get("Descricao", ""))
+            if d:
+                descs[i] = d
+
+        if not quer_valor or not valores_tuss:
             continue
 
-        conv = _normalizar_convenio(str(row.get("Convenio_PRODUCAO", "")))
-        # Lookup valor: específico por convênio → fallback GERAL
+        conv  = _normalizar_convenio(str(row.get("Convenio_PRODUCAO", "")))
         entry = (valores_tuss.get((conv, cod), {}) if conv else {}) or valores_tuss.get(cod, {})
         v = entry.get("UltimoValor") or entry.get("Media")
         if v is not None:
             vals[i] = round(float(v), 2)
 
-        # Lookup descrição
-        descs[i] = (desc_lookup.get(cod)
-                    or str(entry.get("Descricao", ""))
-                    or f"Código TUSS {cod}")
+        # Melhora descrição se desc_lookup tiver algo mais preciso
+        desc_novo = desc_lookup.get(cod) or str(entry.get("Descricao", ""))
+        if desc_novo and (not descs[i] or descs[i].startswith("Código TUSS ")):
+            descs[i] = desc_novo
 
     df = df.copy()
     df["ValorEstimado_TUSS"] = vals
@@ -2502,9 +2683,16 @@ def verificar_tuss_adicionais(
     tuss_idx: set,
 ) -> list:
     """
-    Pós-processamento: para cada linha CORRELACIONADO com ProcedimentosAdicionais,
-    verifica se os códigos TUSS esperados estão presentes no REPASSE.
-    Adiciona colunas StatusTUSS, CodigosTUSS_Esperados e CodigosTUSS_Ausentes.
+    Pós-processamento: para TODA linha CORRELACIONADO (com ou sem ProcedimentosAdicionais),
+    verifica os códigos TUSS esperados e preenche StatusTUSS, CodigosTUSS_Esperados,
+    CodigosTUSS_Ausentes e DescricaoTUSS.
+
+    Casos cobertos:
+    - Proc simples (sem PA): TUSS_PROC_PRINCIPAL_OK / TUSS_CODIGO_PRINCIPAL_DIVERGENTE
+    - PA incorporado no principal: TUSS_ADICIONAL_INCORPORADO_NO_PRINCIPAL
+    - PA com código único: TUSS_PROC_ADICIONAL_RECONHECIDO / TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES
+    - PA com múltiplos códigos: TUSS_TODOS_CODIGOS_ADICIONAIS_FATURADOS / TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE
+    - Companion rows (CORRELACIONADO_PROCEDIMENTO_ADICIONAL sem proc_princ): TUSS_PROC_ADICIONAL_RECONHECIDO
     """
     from datetime import timedelta
 
@@ -2512,29 +2700,63 @@ def verificar_tuss_adicionais(
         status = str(linha.get("StatusCorrelacao", ""))
         if not status.startswith("CORRELACIONADO"):
             continue
-        proc_adic = str(linha.get("ProcedimentosAdicionais_PRODUCAO", "")).strip()
-        if not proc_adic or proc_adic in ("", "nan"):
+
+        proc_adic  = str(linha.get("ProcedimentosAdicionais_PRODUCAO", "")).strip()
+        sem_pa     = not proc_adic or proc_adic == "nan"
+        proc_princ = str(linha.get("Procedimento_PRODUCAO", "")).strip()
+        sem_princ  = not proc_princ or proc_princ == "nan"
+
+        # Causa 2: companion row — CORRELACIONADO_PROCEDIMENTO_ADICIONAL sem proc_princ nem PA
+        # O código já está presente no repasse; apenas registrar como reconhecido.
+        if sem_pa and sem_princ:
+            if status == "CORRELACIONADO_PROCEDIMENTO_ADICIONAL":
+                linha["StatusTUSS"] = "TUSS_PROC_ADICIONAL_RECONHECIDO"
             continue
 
-        proc_princ = str(linha.get("Procedimento_PRODUCAO", "")).strip()
-        chave = _normalizar_chave_tuss(f"{proc_princ}_{proc_adic}")
+        # Monta chave: com PA → "PROC_PA", sem PA → "PROC_"
+        chave = _normalizar_chave_tuss(
+            f"{proc_princ}_{proc_adic}" if not sem_pa else f"{proc_princ}_"
+        )
         entry = tabela_tuss.get(chave)
 
         if not entry:
             linha["StatusTUSS"] = "TUSS_COMBINACAO_SEM_MAPEAMENTO"
             continue
 
-        tipo = str(entry.get("TipoCobranca", ""))
+        tipo       = str(entry.get("TipoCobranca", ""))
         codigos_raw = str(entry.get("CodigosTUSS", ""))
-        codigos = [c.strip() for c in codigos_raw.split(",") if c.strip() and c.strip() != "nan"]
-        base = str(entry.get("codigo_base_proc_principal", "")).replace(".0", "").strip()
+        codigos    = [c.strip() for c in codigos_raw.split(",") if c.strip() and c.strip() != "nan"]
+        base       = str(entry.get("codigo_base_proc_principal", "")).replace(".0", "").strip()
+        desc       = str(entry.get("Descricao_REPASSE", "")).strip()
 
         if tipo == "sem_mapeamento_tuss":
             linha["StatusTUSS"] = "TUSS_COMBINACAO_SEM_MAPEAMENTO"
+            if desc:
+                linha["DescricaoTUSS"] = desc
             continue
 
+        # Proc simples sem PA: verificar se o código no REPASSE bate com o esperado
+        if sem_pa and tipo == "unico_cod_tuss_somente_proc_principal":
+            cod_repasse = str(linha.get("CodigoTUSS_REPASSE", "")).replace(".0", "").strip()
+            esperado    = codigos[0] if codigos else ""
+            linha["StatusTUSS"] = (
+                "TUSS_PROC_PRINCIPAL_OK"
+                if esperado and cod_repasse == esperado
+                else "TUSS_CODIGO_PRINCIPAL_DIVERGENTE"
+            )
+            if esperado:
+                linha["CodigosTUSS_Esperados"] = esperado
+            if desc:
+                linha["DescricaoTUSS"] = desc
+            continue
+
+        # PA com código igual ao do proc principal (adicional incorporado)
         if tipo == "unico_cod_tuss_somente_proc_principal":
             linha["StatusTUSS"] = "TUSS_ADICIONAL_INCORPORADO_NO_PRINCIPAL"
+            if codigos:
+                linha["CodigosTUSS_Esperados"] = codigos[0]
+            if desc:
+                linha["DescricaoTUSS"] = desc
             continue
 
         cod_repasse = str(linha.get("CodigoTUSS_REPASSE", "")).replace(".0", "").strip()
@@ -2545,6 +2767,8 @@ def verificar_tuss_adicionais(
             else:
                 linha["StatusTUSS"] = "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES"
             linha["CodigosTUSS_Esperados"] = codigos[0] if codigos else ""
+            if desc:
+                linha["DescricaoTUSS"] = desc
             continue
 
         # tipo == "multiplos_cod_tuss_proced_adicional"
@@ -2574,6 +2798,8 @@ def verificar_tuss_adicionais(
         linha["CodigosTUSS_Esperados"] = ", ".join(codigos_adicionais)
         if ausentes:
             linha["CodigosTUSS_Ausentes"] = ", ".join(ausentes)
+        if desc:
+            linha["DescricaoTUSS"] = desc
 
     return linhas_resultado
 
@@ -2907,31 +3133,53 @@ def correlacionar_csv_arquivos(
 
         # ── Verificação TUSS pós-correlação ───────────────────────────────────
         tabela_tuss: dict = {}
+        _tuss_debug_log = _TUSS_DIR / "tuss_debug.log"
         try:
-            # Prioridade: dado pré-carregado (não vazio) → leitura direta do CSV
-            # NÃO usa _carregar_tabela_tuss() aqui porque @st.cache_data pode ter
-            # cacheado um {} stale de quando o arquivo ainda não existia
+            def _dbg(msg):
+                """Grava diagnóstico em arquivo para inspeção mesmo sem acesso ao terminal."""
+                import threading
+                linha = f"[{datetime.now().isoformat()} T={threading.current_thread().name}] {msg}\n"
+                logger.info(msg)
+                try:
+                    with open(_tuss_debug_log, "a", encoding="utf-8") as _f:
+                        _f.write(linha)
+                except Exception:
+                    pass
+
+            _dbg(f"TUSS-INIT preloaded={bool(tabela_tuss_preloaded)} len={len(tabela_tuss_preloaded) if tabela_tuss_preloaded else 0}")
+            _dbg(f"TUSS-PATH exists={_TUSS_LOOKUP_PATH.exists()} path={_TUSS_LOOKUP_PATH}")
+
             if tabela_tuss_preloaded:
                 tabela_tuss = tabela_tuss_preloaded
-                logger.info(f"tabela_tuss: usando pré-carregado ({len(tabela_tuss)} entradas)")
+                _dbg(f"TUSS-LOAD via preloaded ({len(tabela_tuss)} entradas)")
             elif _TUSS_LOOKUP_PATH.exists():
                 _df_lookup = pd.read_csv(
                     _TUSS_LOOKUP_PATH,
                     dtype={"CodigosTUSS": str, "codigo_base_proc_principal": str},
                 )
                 tabela_tuss = {str(r["chave_norm"]): dict(r) for _, r in _df_lookup.iterrows()}
-                logger.info(f"tabela_tuss: lida diretamente do CSV ({len(tabela_tuss)} entradas)")
+                _dbg(f"TUSS-LOAD via read_csv ({len(tabela_tuss)} entradas)")
             else:
-                logger.warning(f"tabela_tuss: arquivo não encontrado em {_TUSS_LOOKUP_PATH}")
+                tabela_tuss = dict(_TABELA_TUSS_EMBUTIDA)
+                _dbg(f"TUSS-LOAD via embutida ({len(tabela_tuss)} entradas)")
 
             if tabela_tuss:
                 tuss_idx = _construir_indice_tuss_repasse(df_rep)
+                _dbg(f"TUSS-IDX construído ({len(tuss_idx)} entradas)")
+                linhas_antes = len(linhas_resultado)
                 linhas_resultado = verificar_tuss_adicionais(linhas_resultado, df_rep, tabela_tuss, tuss_idx)
-                logger.info("Verificação TUSS concluída")
+                n_com_status = sum(1 for l in linhas_resultado if "StatusTUSS" in l)
+                _dbg(f"TUSS-VERIFY concluído: {linhas_antes} linhas, {n_com_status} com StatusTUSS")
             else:
-                logger.warning("tabela_tuss vazia — verificar_tuss_adicionais ignorada")
+                _dbg("TUSS-SKIP tabela_tuss vazia")
         except Exception as _e_tuss:
             logger.warning(f"Verificação TUSS ignorada: {_e_tuss}", exc_info=True)
+            try:
+                with open(_tuss_debug_log, "a", encoding="utf-8") as _f:
+                    import traceback
+                    _f.write(f"TUSS-EXCEPTION: {_e_tuss}\n{traceback.format_exc()}\n")
+            except Exception:
+                pass
 
         # ── Monta DataFrame final e ordena por data ───────────────────────────
         df_final = pd.DataFrame(linhas_resultado)
@@ -4144,7 +4392,7 @@ def main():
                         help="NrAtendimento + Data ±1 dia + Procedimento (nome não encontrado)",
                     )
                     mc3.metric(
-                        "3 Nome Fuzzy",
+                        "3 Nome Muito Parecido",
                         f"{n_m3}",
                         delta=_perc(n_m3, total_linhas),
                         delta_color="off",
@@ -4167,28 +4415,43 @@ def main():
 
                     # ── Linha 1b: TUSS (se disponível) ───────────────────────
                     tuss_col = df_final.get("StatusTUSS", pd.Series(dtype=str)).fillna("")
-                    n_tuss_downgrade = (tuss_col.str.upper() == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES").sum()
-                    n_tuss_ausente   = (tuss_col.str.upper() == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE").sum()
-                    if n_tuss_downgrade + n_tuss_ausente > 0:
-                        st.markdown("#### Alertas TUSS — procedimentos adicionais")
-                        tc1, tc2, tc3 = st.columns(3)
+                    n_tuss_downgrade  = (tuss_col.str.upper() == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES").sum()
+                    n_tuss_ausente    = (tuss_col.str.upper() == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE").sum()
+                    n_tuss_princ_div  = (tuss_col.str.upper() == "TUSS_CODIGO_PRINCIPAL_DIVERGENTE").sum()
+                    n_tuss_ok         = (tuss_col.str.upper() == "TUSS_PROC_PRINCIPAL_OK").sum()
+                    n_tuss_rec        = (tuss_col.str.upper().isin({
+                        "TUSS_PROC_ADICIONAL_RECONHECIDO",
+                        "TUSS_TODOS_CODIGOS_ADICIONAIS_FATURADOS",
+                        "TUSS_ADICIONAL_INCORPORADO_NO_PRINCIPAL",
+                    })).sum()
+                    n_tuss_alertas = n_tuss_downgrade + n_tuss_ausente + n_tuss_princ_div
+                    if n_tuss_alertas + n_tuss_ok + n_tuss_rec > 0:
+                        st.markdown("#### Verificação TUSS")
+                        tc1, tc2, tc3, tc4 = st.columns(4)
                         tc1.metric(
+                            "✅ Proc. Principal OK",
+                            int(n_tuss_ok + n_tuss_rec),
+                            delta=_perc(n_tuss_ok + n_tuss_rec, total_linhas),
+                            delta_color="off",
+                            help="Código TUSS do proc. principal correto no REPASSE (inclui adicionais reconhecidos e incorporados)",
+                        )
+                        tc2.metric(
                             "🔴 Cobrado Como Simples",
                             int(n_tuss_downgrade),
                             delta=_perc(n_tuss_downgrade, total_linhas),
                             delta_color="off",
                             help="Procedimento faturado com código simples; deveria ter código combinado (biópsia, polipectomia etc.)",
                         )
-                        tc2.metric(
-                            "🟠 Código Adicional Ausente",
-                            int(n_tuss_ausente),
-                            delta=_perc(n_tuss_ausente, total_linhas),
-                            delta_color="off",
-                            help="Código TUSS de procedimento adicional (ex.: Urease) não encontrado no REPASSE",
-                        )
                         tc3.metric(
-                            "🔎 Total p/ Cobrança",
-                            int(n_tuss_downgrade + n_tuss_ausente),
+                            "🟠 Código Ausente no Repasse",
+                            int(n_tuss_ausente + n_tuss_princ_div),
+                            delta=_perc(n_tuss_ausente + n_tuss_princ_div, total_linhas),
+                            delta_color="off",
+                            help="Código TUSS esperado não encontrado no REPASSE (adicional ausente ou código principal divergente)",
+                        )
+                        tc4.metric(
+                            "🔎 Total Alertas",
+                            int(n_tuss_alertas),
                             help="Abra a aba 📋 Gerar Cobrança para exportar o formulário de revisão",
                         )
 
@@ -4332,10 +4595,16 @@ def main():
                         cor[_st == "CORRELACIONADO"]                            = "background-color: #d4edda"
                         cor[_st.str.contains("PROCEDIMENTO_DIVERGENTE", na=False)] = "background-color: #ffc107; color: #000"
                         # TUSS sobrescreve — máxima prioridade
+                        # Verde: procedimento OK / reconhecido / incorporado
+                        cor[_tss == "TUSS_PROC_PRINCIPAL_OK"]                    = "background-color: #d4edda"
                         cor[_tss == "TUSS_PROC_ADICIONAL_RECONHECIDO"]           = "background-color: #d4edda"
                         cor[_tss == "TUSS_TODOS_CODIGOS_ADICIONAIS_FATURADOS"]   = "background-color: #d4edda"
+                        cor[_tss == "TUSS_ADICIONAL_INCORPORADO_NO_PRINCIPAL"]   = "background-color: #d4edda"
+                        # Laranja: código ausente no repasse
                         cor[_tss == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE"]  = "background-color: #e67e22; color: #fff"
+                        # Vermelho: cobrado errado / código principal divergente
                         cor[_tss == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES"]  = "background-color: #c0392b; color: #fff"
+                        cor[_tss == "TUSS_CODIGO_PRINCIPAL_DIVERGENTE"]          = "background-color: #c0392b; color: #fff"
                         return pd.DataFrame(
                             _np.repeat(cor.values[:, None], len(df.columns), axis=1),
                             columns=df.columns, index=df.index,
@@ -4404,13 +4673,25 @@ def main():
                             index=False, sep=",", encoding="utf-8-sig"
                         )
                     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    st.download_button(
+                    _dl_col, _log_col = st.columns([3, 1])
+                    _dl_col.download_button(
                         label=f"⬇️ Baixar CSV Correlacionado ({_n_filtrado:,} linhas)",
                         data=st.session_state[_csv_dl_key].encode("utf-8-sig"),
                         file_name=f"correlacao_endoscopia_{ts}.csv",
                         mime="text/csv",
                         type="primary",
                     )
+                    # ── Log de diagnóstico TUSS (útil em Docker) ─────────────
+                    _tuss_log_path = _TUSS_DIR / "tuss_debug.log"
+                    if _tuss_log_path.exists():
+                        _log_bytes = _tuss_log_path.read_bytes()
+                        _log_col.download_button(
+                            label="🪲 Log TUSS",
+                            data=_log_bytes,
+                            file_name="tuss_debug.log",
+                            mime="text/plain",
+                            help="Log de diagnóstico da verificação TUSS — gerado durante a correlação",
+                        )
 
                 else:
                     st.warning("⚠️ Não foi possível renderizar o DataFrame. Exibindo CSV bruto.")
@@ -4709,10 +4990,20 @@ def main():
                     int((df_prev["_origem"].isin(["ausente", "nao_faturado"])).sum()))
 
                 colunas_prev = ["DATA", "PACIENTE", "CONVENIO", "CODIGO", "PROCEDIMENTO", "VALOR", "OBSERVACAO"]
-                st.dataframe(
-                    df_prev[[c for c in colunas_prev if c in df_prev.columns]],
-                    use_container_width=True, height=300,
-                )
+                _pb_col, _ = st.columns([2, 8])
+                if not st.session_state.get("cob_show_previa", False):
+                    if _pb_col.button("👁️ Exibir prévia", key="btn_show_cob_previa", type="primary",
+                                      help=f"{len(df_prev):,} linhas disponíveis"):
+                        st.session_state["cob_show_previa"] = True
+                        st.rerun()
+                else:
+                    if _pb_col.button("🔒 Ocultar prévia", key="btn_hide_cob_previa"):
+                        st.session_state["cob_show_previa"] = False
+                        st.rerun()
+                    st.dataframe(
+                        df_prev[[c for c in colunas_prev if c in df_prev.columns]],
+                        use_container_width=True, height=300,
+                    )
 
                 # ── Seção 3: Cabeçalho do formulário ─────────────────────────
                 st.subheader("3. Cabeçalho do formulário")
@@ -4762,16 +5053,26 @@ def main():
                                 ["Código TUSS", "Convênio"],
                                 key=lambda s: s.where(s != "GERAL", "ZZZZ"),
                             )
-                            st.dataframe(
-                                _df_disp,
-                                use_container_width=True,
-                                hide_index=True,
-                                height=min(35 * len(_df_disp) + 40, 320),
-                                column_config={
-                                    "Último Valor (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-                                    "Média (R$)":        st.column_config.NumberColumn(format="R$ %.2f"),
-                                },
-                            )
+                            _eb_col, _ = st.columns([2, 8])
+                            if not st.session_state.get("cob_show_estimativa", False):
+                                if _eb_col.button("👁️ Exibir estimativa", key="btn_show_cob_est", type="primary",
+                                                  help=f"{len(_df_disp):,} linhas de referência"):
+                                    st.session_state["cob_show_estimativa"] = True
+                                    st.rerun()
+                            else:
+                                if _eb_col.button("🔒 Ocultar estimativa", key="btn_hide_cob_est"):
+                                    st.session_state["cob_show_estimativa"] = False
+                                    st.rerun()
+                                st.dataframe(
+                                    _df_disp,
+                                    use_container_width=True,
+                                    hide_index=True,
+                                    height=min(35 * len(_df_disp) + 40, 320),
+                                    column_config={
+                                        "Último Valor (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                                        "Média (R$)":        st.column_config.NumberColumn(format="R$ %.2f"),
+                                    },
+                                )
                         else:
                             st.caption("Nenhum código dos itens selecionados encontrado em tuss_valores.csv.")
                     except Exception as _e_vref:
