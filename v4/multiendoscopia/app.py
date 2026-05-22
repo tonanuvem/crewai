@@ -4243,9 +4243,13 @@ def main():
                     # Styling vetorizado (axis=None): ~60× mais rápido que apply(axis=1) por linha
                     def _build_style_df(df: pd.DataFrame) -> pd.DataFrame:
                         import numpy as _np
-                        _st  = df.get("StatusCorrelacao", pd.Series(dtype=str)).fillna("").str.upper()
-                        _tss = df.get("StatusTUSS",       pd.Series(dtype=str)).fillna("").str.upper()
-                        cor  = pd.Series("", index=df.index)
+                        # Usa reindex para garantir índice alinhado com df (necessário após filtro booleano)
+                        _empty = pd.Series("", index=df.index, dtype=str)
+                        _st  = (df["StatusCorrelacao"].fillna("").str.upper()
+                                if "StatusCorrelacao" in df.columns else _empty)
+                        _tss = (df["StatusTUSS"].fillna("").str.upper()
+                                if "StatusTUSS" in df.columns else _empty)
+                        cor  = pd.Series("", index=df.index, dtype=str)
                         # Aplica do menor para o maior nível de prioridade (último vence)
                         cor[_st.str.contains("NAO_IDENTIFICADO",    na=False)] = "background-color: #e2e3e5"
                         cor[_st.str.contains("DATA_FORA_DO_PERIODO",na=False)] = "background-color: #e2e3e5; color: #888"
