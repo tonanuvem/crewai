@@ -2908,9 +2908,22 @@ def correlacionar_csv_arquivos(
         # ── Verificação TUSS pós-correlação ───────────────────────────────────
         tabela_tuss: dict = {}
         try:
-            # Usa dados pré-carregados (passados da thread principal) para evitar
-            # falha do @st.cache_data em contexto de background thread
-            tabela_tuss = tabela_tuss_preloaded if tabela_tuss_preloaded is not None else _carregar_tabela_tuss()
+            # Prioridade: dado pré-carregado (não vazio) → leitura direta do CSV
+            # NÃO usa _carregar_tabela_tuss() aqui porque @st.cache_data pode ter
+            # cacheado um {} stale de quando o arquivo ainda não existia
+            if tabela_tuss_preloaded:
+                tabela_tuss = tabela_tuss_preloaded
+                logger.info(f"tabela_tuss: usando pré-carregado ({len(tabela_tuss)} entradas)")
+            elif _TUSS_LOOKUP_PATH.exists():
+                _df_lookup = pd.read_csv(
+                    _TUSS_LOOKUP_PATH,
+                    dtype={"CodigosTUSS": str, "codigo_base_proc_principal": str},
+                )
+                tabela_tuss = {str(r["chave_norm"]): dict(r) for _, r in _df_lookup.iterrows()}
+                logger.info(f"tabela_tuss: lida diretamente do CSV ({len(tabela_tuss)} entradas)")
+            else:
+                logger.warning(f"tabela_tuss: arquivo não encontrado em {_TUSS_LOOKUP_PATH}")
+
             if tabela_tuss:
                 tuss_idx = _construir_indice_tuss_repasse(df_rep)
                 linhas_resultado = verificar_tuss_adicionais(linhas_resultado, df_rep, tabela_tuss, tuss_idx)
@@ -2918,7 +2931,7 @@ def correlacionar_csv_arquivos(
             else:
                 logger.warning("tabela_tuss vazia — verificar_tuss_adicionais ignorada")
         except Exception as _e_tuss:
-            logger.warning(f"Verificação TUSS ignorada: {_e_tuss}")
+            logger.warning(f"Verificação TUSS ignorada: {_e_tuss}", exc_info=True)
 
         # ── Monta DataFrame final e ordena por data ───────────────────────────
         df_final = pd.DataFrame(linhas_resultado)
@@ -2926,15 +2939,17 @@ def correlacionar_csv_arquivos(
 
         # ── Enriquecimento com valores e descrições TUSS ──────────────────────
         try:
+            # Mesmo padrão: preloaded (não vazio) → fallback para _carregar_valores_tuss
+            # (valores_tuss muda com mais frequência, cache stale menos crítico aqui)
             _valores_tuss_corr = (
-                valores_tuss_preloaded if valores_tuss_preloaded is not None
+                valores_tuss_preloaded if valores_tuss_preloaded
                 else _carregar_valores_tuss()
             )
-            _desc_lookup_corr  = _construir_desc_por_tuss_code(tabela_tuss if tabela_tuss else {})
+            _desc_lookup_corr  = _construir_desc_por_tuss_code(tabela_tuss)
             df_final = _enriquecer_com_valores_tuss(df_final, _valores_tuss_corr, _desc_lookup_corr)
             logger.info("Enriquecimento TUSS concluído")
         except Exception as _e_enr:
-            logger.warning(f"Enriquecimento TUSS ignorado: {_e_enr}")
+            logger.warning(f"Enriquecimento TUSS ignorado: {_e_enr}", exc_info=True)
 
         if "Data_PRODUCAO" in df_final.columns:
             df_final["_sort_date"] = df_final.apply(
@@ -3866,10 +3881,14 @@ def main():
                             st.markdown("##### ⏳ Aguarde — correlacionando PRODUCAO × REPASSE...")
                             _prog_local = st.progress(0, "Iniciando correlação...")
 
-                            # Pré-carrega tabelas TUSS na thread principal (st.cache_data falha em threads secundárias)
+                            # Pré-carrega tabelas TUSS na thread principal.
+                            # Limpa o cache antes de carregar para evitar retornar {}
+                            # stale cacheado de uma execução anterior com arquivo ausente.
                             _tabela_tuss_pre: dict = {}
                             _valores_tuss_pre: dict = {}
                             try:
+                                _carregar_tabela_tuss.clear()
+                                _carregar_valores_tuss.clear()
                                 _tabela_tuss_pre = _carregar_tabela_tuss()
                                 _valores_tuss_pre = _carregar_valores_tuss()
                                 logger.info(f"Tabelas TUSS pré-carregadas: {len(_tabela_tuss_pre)} entradas lookup, {len(_valores_tuss_pre)} entradas valores")
