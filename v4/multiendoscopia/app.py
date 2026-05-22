@@ -1754,6 +1754,276 @@ _TUSS_LOOKUP_PATH = _TUSS_DIR / "tuss_lookup_table.csv"
 _TUSS_VALORES_PATH = _TUSS_DIR / "tuss_valores.csv"
 _TUSS_XLSX_PATH    = _TUSS_DIR / "TUSS (ATUALIZADO).xlsx"
 
+# Logo do Hospital São Camilo embutida em base64 (extraída do template original)
+_LOGO_SAOCAMILO_B64 = (
+    "/9j/4AAQSkZJRgABAQEAeAB4AAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a"
+    "HBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy"
+    "MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCACOAYsDASIA"
+    "AhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQA"
+    "AAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3"
+    "ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWm"
+    "p6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEA"
+    "AwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSEx"
+    "BhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElK"
+    "U1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3"
+    "uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iii"
+    "gAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKA"
+    "CiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooqrqG"
+    "o2mlWT3d9OkECDlmP6D1PtQ3bccYuTUYq7ZaorgLP4lDU7zUksrDFvaWUtyjythnKdMgdAan8IfE"
+    "vTPErpaXKix1Bvuxu2UkP+y3r7Hn61mqsHsztq5biqSbnDbfyudxRRRWhwhRRRQAUUUUAFFFFABR"
+    "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"
+    "VPkv8+oyGGO3hSGGNY4kAVUUYCj0Ap9FFbHlbhRRRQBlah4b0bVZPMvdOglkPVyuGP4jmo7LwnoO"
+    "nTCa20yBZR0ZgWI+mc4rZooAbJGk0TxSKGRwVZT3BqKzsrXT7ZbazgSCFSSEQYAzU9FABSEBlIIy"
+    "CMEGlooAq2Om2WmRNFZW0cEbNuKxjAJ9aL7TbLU4fJvrWK4j7CRc4+npVqigDBh8FeHIJRImkwbg"
+    "cjdlgPwJxW6qqihUUKoGAAMAClooAKhubW3vYGguYI5om6pIoYfrU1FAHPjwR4bEm/8AsqHPXGWx"
+    "+Wa1v7MsfsDWItYhaMMGFVAUj6CrVFAFWx02y0yForG2jt42bcVjXAJ9atUUUARXFvDd28lvcRrJ"
+    "DINrowyCKr2GkafpiyLY2kVuJMbxGMbsetXaKAKNho2naW8j2NnDA0gAcxrgt9avUUUAU7HSbDTD"
+    "KbK0igMpy5jXG76/nVsgMCCMg8GlooAoWGiaZpkry2NlDbu42s0a4JHWku9C0q+uxdXVhBNOMYkd"
+    "cnjpWhRQAyaGO4heGVA8cilWU9CD1FZH/CI+H/8AoEWv/fFbVFAGPH4V0GKRJE0q2V0YMpCdCOhr"
+    "YoooAxbvwjoF9KZZ9LgMhOSygrn8sVa07QtL0nJsLGGBjwWVfm/M81oUUAFFFFABRRRQAUUUUAFQ"
+    "XlpDf2c1pcIHhmQo6nuDU9FA02ndHzr4n8N3XhnVWtZgXgbLQTY4kX/EdxWLX0lreiWWv6a9lfR7"
+    "kblWH3kbswPrXhPibwtf+GL7yrlS9u5/c3Cj5XHp7H2rzK9Bwd1sff5Rm8MXFU6jtUX4+a/VGz8O"
+    "Z/Jm17nppkj/AJf/AK680T7o+ld94KkMcmun/qET/wAhXBIpbaqgljgAAZJPpU39xfM1cbYuq+/L"
+    "+Qp4r234W+CpNJgOuajGUvLhNsETDmKM9z7n9BVT4ffDQ2rRazr0I88Ya3tGGdnoz+/t2r1auuhR"
+    "t70j53Ns0U06FF6dX+iCiiiuo+cCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAC"
+    "iiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACq99YWupWklpe"
+    "QJPBIMMjjIqxRRuOMnF3Tszg7T4aw6beai9lfsILuzktljlTcYy465zyBVnwj8N9K8MMt1IxvdQA"
+    "4nkXAT/cXt9etdnRWapQWyOyrmOKqpqc99/OwUUUVocQUUUUAFFFFABRRRQAUUUUAFFFFABRRRQA"
+    "UUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAf/Z"
+)
+
+
+def _criar_workbook_formulario_template():
+    """Cria o workbook do formulário de cobrança programaticamente.
+
+    Reproduz fielmente o layout do template original (mesmas merges, estilos,
+    larguras, bordas e logo do Hospital São Camilo) sem depender de arquivo externo.
+    Retorna um openpyxl.Workbook pronto para receber preenchimento a partir da linha 11.
+    """
+    import base64
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.drawing.image import Image as XLImage
+    from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Plan1"
+
+    # ── Larguras de coluna (idênticas ao template original) ────────────────
+    col_widths = {
+        "A": 12.5, "B": 14.33, "C": 49.5, "D": 23.5, "E": 26.33,
+        "F": 21.5,  "G": 33.33, "H": 12.0, "I": 41.33, "J": 18.66,
+    }
+    for col, w in col_widths.items():
+        ws.column_dimensions[col].width = w
+
+    # ── Alturas de linhas (cabeçalho) ──────────────────────────────────────
+    for r in (1, 3, 4, 6):
+        ws.row_dimensions[r].height = 12
+    ws.row_dimensions[7].height = 15.75
+
+    # ── Estilos reutilizáveis ──────────────────────────────────────────────
+    f8b      = Font(name="Arial", size=8, bold=True)
+    f8       = Font(name="Arial", size=8)
+    center   = Alignment(horizontal="center", vertical="center")
+    left_al  = Alignment(horizontal="left",   vertical="center")
+    thin     = Side(style="thin")
+    b_all    = Border(left=thin, right=thin, top=thin, bottom=thin)
+    b_top_bot = Border(top=thin, bottom=thin)
+    b_left   = Border(left=thin, top=thin, bottom=thin)
+    b_right  = Border(right=thin, top=thin, bottom=thin)
+    fill_azul = PatternFill("solid", fgColor="DDEBF7")  # aproxima o fill de tema das colunas I/J
+
+    # ── Linha 2–3: Título do hospital (merge C2:J3) ────────────────────────
+    ws.merge_cells("C2:J3")
+    ws["C2"].value     = "HOSPITAL  SÃO CAMILO "
+    ws["C2"].font      = f8b
+    ws["C2"].alignment = center
+
+    # ── Linha 5: Título do formulário (merge C5:J5) ───────────────────────
+    ws.merge_cells("C5:J5")
+    ws["C5"].value     = "FORMULÁRIO PARA SOLICITAÇÃO DE REVISÃO DE PROCEDIMENTOS NÃO REPASSADOS "
+    ws["C5"].font      = f8b
+    ws["C5"].alignment = center
+
+    # ── Linha 7: campos de cabeçalho ──────────────────────────────────────
+    ws.merge_cells("A7:C7")
+    ws["A7"].value     = "EMPRESA"       # sobrescrito pelo código chamador
+    ws["A7"].font      = f8b
+    ws["A7"].alignment = left_al
+
+    ws.merge_cells("D7:F7")
+    ws["D7"].value     = "MÉDICO RESPONSÁVEL"   # sobrescrito
+    ws["D7"].font      = f8b
+    ws["D7"].alignment = left_al
+
+    ws["G7"].value     = "DATA: "               # sobrescrito
+    ws["G7"].font      = f8b
+    ws["G7"].alignment = left_al
+
+    ws.merge_cells("I7:J7")
+    ws["I7"].value     = "PRAZO DE RETORNO AO PRESTADOR: 30 dias"
+    ws["I7"].font      = f8b
+    ws["I7"].alignment = left_al
+
+    # ── Linha 9: seções (merge A9:H9 / I9:J9) ────────────────────────────
+    ws.merge_cells("A9:H9")
+    ws["A9"].value     = "PREENCHIMENTO PRESTADOR"
+    ws["A9"].font      = f8b
+    ws["A9"].alignment = center
+    # bordas externas do bloco A9:H9
+    for c in range(1, 9):
+        cell = ws.cell(9, c)
+        cell.font      = f8b
+        cell.alignment = center
+        left_s  = thin if c == 1 else Side()
+        right_s = thin if c == 8 else Side()
+        cell.border = Border(top=thin, bottom=thin, left=left_s, right=right_s)
+
+    ws.merge_cells("I9:J9")
+    ws["I9"].value     = "PREENCHIMENTO CONTAS MÉDICAS"
+    ws["I9"].font      = f8b
+    ws["I9"].alignment = center
+    ws["I9"].fill      = fill_azul
+    for c in (9, 10):
+        cell = ws.cell(9, c)
+        cell.fill   = fill_azul
+        cell.font   = f8b
+        left_s  = thin if c == 9 else Side()
+        cell.border = Border(top=thin, bottom=thin, left=left_s, right=thin)
+
+    # ── Linha 10: cabeçalhos das colunas de dados ─────────────────────────
+    headers = [
+        "DATA ", "Nº ATEND.", "PACIENTE", "CONVÊNIO", "PRESTADOR",
+        "CÓDIGO", "PROCEDIMENTO", "Função", "OBSERVAÇÃO CONTAS MÉDICAS", "VALOR",
+    ]
+    for c, hdr in enumerate(headers, 1):
+        cell = ws.cell(10, c)
+        cell.value     = hdr
+        cell.font      = f8b
+        cell.alignment = center
+        cell.border    = b_all
+        if c in (9, 10):
+            cell.fill  = fill_azul
+
+    # ── Logo do Hospital São Camilo ───────────────────────────────────────
+    try:
+        logo_bytes = base64.b64decode(_LOGO_SAOCAMILO_B64)
+        img        = XLImage(BytesIO(logo_bytes))
+        img.width  = 93   # convertido de EMU: 885825 ÷ 9525
+        img.height = 49   # convertido de EMU: 462915 ÷ 9525
+        ws.add_image(img, "A1")
+    except Exception:
+        pass  # falha silenciosa: logo não é crítica para o formulário
+
+    return wb
+
 
 def _normalizar_chave_tuss(s: str) -> str:
     """Normaliza chave CONCATENAR: remove acentos, colapsa separadores e espaços."""
@@ -1868,19 +2138,33 @@ def _gerar_tabela_tuss(
     return df_out
 
 
+def _normalizar_convenio(s: str) -> str:
+    """Normaliza nome de convênio: maiúsculas, sem acentos, espaços colapsados."""
+    import unicodedata as _ud
+    s = str(s).upper().strip()
+    s = _ud.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", " ", s)
+
+
 def _gerar_valores_tuss(
     df_correlacao: pd.DataFrame,
     caminho_saida: Path = _TUSS_VALORES_PATH,
     ano: int | None = None,
 ) -> pd.DataFrame:
     """
-    Calcula estatísticas de valor por código TUSS a partir do DataFrame de correlação
-    e atualiza (ou cria) tuss_valores.csv acumulando por ano.
-    Chame após cada novo REPASSE processado para manter os valores atualizados.
-    """
-    tabela = _carregar_tabela_tuss()
+    Calcula estatísticas de valor por (Convênio, Código TUSS) a partir do
+    DataFrame de correlação e atualiza (ou cria) tuss_valores.csv.
 
-    # Descrições oficiais por código individual (sem multi-código)
+    Estrutura gerada:
+        Ano | Convenio | CodigoTUSS | Descricao | Qtd | Media | UltimoValor | DataUltimo | Confianca
+
+    Uma linha por (Convênio normalizado, Código) + linha Convenio="GERAL" como
+    fallback agregado por código.  Chamada automaticamente pela aba Gerar Cobrança
+    quando o arquivo não existe.
+    """
+    import unicodedata as _ud
+
+    # ── Descrições oficiais ────────────────────────────────────────────────
     _DESC_OFICIAL: dict[str, str] = {
         "40201074": "Colangiopancreatografia Retrógrada Endoscópica",
         "40201082": "Colonoscopia (Inclui A Retossigmoidoscopia)",
@@ -1911,19 +2195,29 @@ def _gerar_valores_tuss(
         "40813320": "Colocação De Stent Biliar",
     }
 
-    # Extrair todos os códigos únicos da tabela
-    todos_codigos: set[str] = set()
-    for entry in tabela.values():
-        for c in [x.strip() for x in str(entry.get("CodigosTUSS", "")).split(",") if x.strip()]:
-            todos_codigos.add(c)
+    def _desc(cod, desc_real_map):
+        return desc_real_map.get(cod) or _DESC_OFICIAL.get(cod) or f"Código TUSS {cod}"
 
-    # Inferir ano se não fornecido
+    def _confianca(sub: pd.Series) -> str:
+        qtd = len(sub)
+        if qtd == 0:
+            return "Sem dados"
+        if qtd == 1:
+            return "Baixa"
+        std = float(sub.std())
+        media = float(sub.mean())
+        desvio_pct = (std / media * 100) if media > 0 else 100
+        if qtd >= 5 and desvio_pct <= 5:
+            return "Alta"
+        if qtd >= 5 and desvio_pct <= 20:
+            return "Boa"
+        if qtd >= 2:
+            return "Moderada"
+        return "Baixa"
+
+    # ── Inferir ano dominante ──────────────────────────────────────────────
     if ano is None:
-        col_data = None
-        for c in ["Data_REPASSE", "Data_PRODUCAO"]:
-            if c in df_correlacao.columns:
-                col_data = c
-                break
+        col_data = next((c for c in ["Data_REPASSE", "Data_PRODUCAO"] if c in df_correlacao.columns), None)
         if col_data:
             try:
                 anos = df_correlacao[col_data].dropna().astype(str).str.strip().str[-4:].astype(int)
@@ -1933,57 +2227,111 @@ def _gerar_valores_tuss(
         else:
             ano = datetime.now().year
 
-    # Preparar dados do REPASSE
+    # ── Preparar dados válidos do REPASSE ──────────────────────────────────
     df_rep = df_correlacao.copy()
-    df_rep["_cod"] = df_rep.get("CodigoTUSS_REPASSE", pd.Series(dtype=str)).astype(str).str.replace(".0", "", regex=False).str.strip()
-    df_rep["_val"] = pd.to_numeric(df_rep.get("ValorLiberado_REPASSE", pd.Series(dtype=float)), errors="coerce")
-    df_ano = df_rep[df_rep.get("Data_REPASSE", pd.Series(dtype=str)).astype(str).str.strip().str[-4:] == str(ano)]
+    df_rep["_cod"]  = (df_rep.get("CodigoTUSS_REPASSE", pd.Series(dtype=str))
+                       .astype(str).str.replace(".0", "", regex=False).str.strip())
+    df_rep["_val"]  = pd.to_numeric(
+        df_rep.get("ValorLiberado_REPASSE", pd.Series(dtype=float)), errors="coerce")
+    df_rep["_data"] = pd.to_datetime(
+        df_rep.get("Data_REPASSE", pd.Series(dtype=str)), dayfirst=True, errors="coerce")
+    df_rep["_conv"] = (df_rep.get("Convenio_PRODUCAO", pd.Series(dtype=str))
+                       .astype(str).apply(_normalizar_convenio))
 
-    # Descrição real do REPASSE (mais frequente)
-    desc_real = (
-        df_rep[df_rep["_cod"].str.match(r"^\d+$", na=False)]
-        .groupby(["_cod", df_rep.get("Procedimento_REPASSE", pd.Series(dtype=str)).rename("_proc")])
-        .size().reset_index(name="freq")
-        .sort_values(["_cod", "freq"], ascending=[True, False])
-        .groupby("_cod").first().reset_index()[["_cod", "_proc"]]
-    ) if "Procedimento_REPASSE" in df_correlacao.columns else pd.DataFrame(columns=["_cod", "_proc"])
-    desc_real_map = dict(zip(desc_real["_cod"], desc_real["_proc"]))
+    # Filtrar: ano corrente, valor > 0, código numérico
+    mask_ano = df_rep["_data"].dt.year == ano
+    mask_val = df_rep["_val"] > 0
+    mask_cod = df_rep["_cod"].str.match(r"^\d+$", na=False)
+    df_ano   = df_rep[mask_ano & mask_val & mask_cod].copy()
 
-    def _desc(cod):
-        return desc_real_map.get(cod) or _DESC_OFICIAL.get(cod) or f"Código TUSS {cod}"
+    # Mapa de descrição real (mais frequente por código)
+    desc_real_map: dict[str, str] = {}
+    if "Procedimento_REPASSE" in df_correlacao.columns and not df_ano.empty:
+        desc_real = (
+            df_ano.groupby(["_cod", "Procedimento_REPASSE"])
+            .size().reset_index(name="freq")
+            .sort_values(["_cod", "freq"], ascending=[True, False])
+            .groupby("_cod").first().reset_index()[["_cod", "Procedimento_REPASSE"]]
+        )
+        desc_real_map = dict(zip(desc_real["_cod"], desc_real["Procedimento_REPASSE"]))
 
-    novas_linhas = []
+    novas_linhas: list[dict] = []
+
+    # ── 1. Linhas por (Convênio normalizado, Código) ───────────────────────
+    if not df_ano.empty:
+        df_sorted = df_ano.sort_values("_data")
+        for (conv_norm, cod), grp in df_sorted.groupby(["_conv", "_cod"]):
+            if conv_norm in ("NAN", ""):
+                continue
+            sub   = grp["_val"]
+            ult   = grp.iloc[-1]
+            novas_linhas.append({
+                "Ano":          ano,
+                "Convenio":     conv_norm,
+                "CodigoTUSS":   cod,
+                "Descricao":    _desc(cod, desc_real_map),
+                "Qtd":          len(sub),
+                "Media":        round(float(sub.mean()), 2),
+                "UltimoValor":  round(float(ult["_val"]), 2),
+                "DataUltimo":   ult["_data"].strftime("%d/%m/%Y") if pd.notna(ult["_data"]) else "",
+                "Confianca":    _confianca(sub),
+            })
+
+    # ── 2. Linhas GERAL (fallback agregado por código, todos convênios) ────
+    todos_codigos: set[str] = set(df_ano["_cod"].unique()) if not df_ano.empty else set()
+    # incluir códigos da tabela TUSS mesmo sem valor histórico
+    tabela = _carregar_tabela_tuss()
+    for entry in tabela.values():
+        for c in [x.strip() for x in str(entry.get("CodigosTUSS", "")).split(",") if x.strip()]:
+            if c.isdigit():
+                todos_codigos.add(c)
+
+    df_sorted_geral = df_ano.sort_values("_data") if not df_ano.empty else df_ano
     for cod in sorted(todos_codigos):
-        if not str(cod).isdigit():
-            continue
-        sub = df_ano[df_ano["_cod"] == cod]["_val"].dropna()
-        qtd = len(sub)
-        conf = ("Alta" if qtd >= 100 else "Boa" if qtd >= 20 else
-                "Moderada" if qtd >= 5 else "Baixa" if qtd > 0 else "Sem dados")
+        sub_geral = df_ano[df_ano["_cod"] == cod]["_val"] if not df_ano.empty else pd.Series(dtype=float)
+        qtd       = len(sub_geral)
+        if qtd > 0:
+            ult_geral = df_sorted_geral[df_sorted_geral["_cod"] == cod].iloc[-1]
+            ultimo_val  = round(float(ult_geral["_val"]), 2)
+            ultimo_data = ult_geral["_data"].strftime("%d/%m/%Y") if pd.notna(ult_geral["_data"]) else ""
+        else:
+            ultimo_val  = None
+            ultimo_data = ""
         novas_linhas.append({
             "Ano":          ano,
+            "Convenio":     "GERAL",
             "CodigoTUSS":   cod,
-            "Descricao":    _desc(cod),
-            "Qtd_amostras": qtd,
-            "Min":          round(float(sub.min()),    2) if qtd > 0 else None,
-            "Media":        round(float(sub.mean()),   2) if qtd > 0 else None,
-            "Mediana":      round(float(sub.median()), 2) if qtd > 0 else None,
-            "Max":          round(float(sub.max()),    2) if qtd > 0 else None,
-            "Confianca":    conf,
+            "Descricao":    _desc(cod, desc_real_map),
+            "Qtd":          qtd,
+            "Media":        round(float(sub_geral.mean()), 2) if qtd > 0 else None,
+            "UltimoValor":  ultimo_val,
+            "DataUltimo":   ultimo_data,
+            "Confianca":    _confianca(sub_geral) if qtd > 0 else "Sem dados",
         })
+
+    if not novas_linhas:
+        logger.warning("_gerar_valores_tuss: nenhum dado de valor encontrado no DataFrame")
+        return pd.DataFrame()
 
     df_novo = pd.DataFrame(novas_linhas)
 
-    # Acumular: preservar anos anteriores, sobrescrever o ano atual
+    # ── Acumular: preservar anos/convênios anteriores, sobrescrever (Convenio, Ano) atual ──
     if caminho_saida.exists():
         df_existente = pd.read_csv(caminho_saida, dtype={"CodigoTUSS": str})
-        df_existente = df_existente[df_existente["Ano"] != ano]
-        df_final_val = pd.concat([df_existente, df_novo], ignore_index=True).sort_values(["Ano", "CodigoTUSS"])
+        # Retrocompatibilidade: CSV antigo sem coluna Convenio → descartar e reger
+        if "Convenio" not in df_existente.columns:
+            logger.info("tuss_valores.csv antigo (sem Convenio) — regerando com nova estrutura")
+            df_existente = pd.DataFrame()
+        else:
+            df_existente = df_existente[df_existente["Ano"] != ano]
+        df_final_val = pd.concat([df_existente, df_novo], ignore_index=True).sort_values(
+            ["Ano", "Convenio", "CodigoTUSS"])
     else:
         df_final_val = df_novo
 
     df_final_val.to_csv(caminho_saida, index=False, encoding="utf-8-sig")
-    logger.info(f"tuss_valores.csv atualizado: ano={ano}, {len(df_novo)} códigos")
+    n_conv = df_novo[df_novo["Convenio"] != "GERAL"]["Convenio"].nunique()
+    logger.info(f"tuss_valores.csv atualizado: ano={ano}, {n_conv} convênios, {len(df_novo)} linhas")
     return df_final_val
 
 
@@ -2009,18 +2357,30 @@ def _carregar_tabela_tuss() -> dict:
 @st.cache_data(show_spinner=False)
 def _carregar_valores_tuss() -> dict:
     """
-    Carrega tuss_valores.csv como dict {codigo → stats_ano_mais_recente}.
-    Retorna vazio se arquivo não existir (estimativa desabilitada na UI).
+    Carrega tuss_valores.csv como dict de dois níveis (ano mais recente):
+      - chave str  "CodigoTUSS"            → stats GERAL (fallback)
+      - chave tuple (conv_norm, CodigoTUSS) → stats por convênio
+
+    Retorna {} se arquivo não existir ou sem coluna Convenio (formato antigo).
     """
     if not _TUSS_VALORES_PATH.exists():
-        logger.warning("tuss_valores.csv não encontrado — estimativas de valor desabilitadas")
+        logger.warning("tuss_valores.csv não encontrado — será gerado automaticamente")
         return {}
     df = pd.read_csv(_TUSS_VALORES_PATH, dtype={"CodigoTUSS": str})
-    if df.empty:
+    if df.empty or "Convenio" not in df.columns:
         return {}
-    ano_mais_recente = df["Ano"].max()
+    ano_mais_recente = int(df["Ano"].max())
     df_atual = df[df["Ano"] == ano_mais_recente]
-    return {str(r["CodigoTUSS"]): dict(r) for _, r in df_atual.iterrows()}
+    resultado: dict = {}
+    for _, r in df_atual.iterrows():
+        cod  = str(r["CodigoTUSS"])
+        conv = str(r.get("Convenio", "GERAL"))
+        stats = dict(r)
+        if conv == "GERAL":
+            resultado[cod] = stats            # fallback por código
+        else:
+            resultado[(conv, cod)] = stats    # específico por plano
+    return resultado
 
 
 def _construir_indice_tuss_repasse(df_rep: pd.DataFrame) -> set:
@@ -3742,16 +4102,11 @@ def main():
             "preenchido automaticamente com os casos identificados na correlação."
         )
 
-        _TEMPLATE_PATH = _TUSS_DIR / "FORMULÁRIO PARA SOLICITAÇÃO DE REVISÃO DE PROCEDIMENTOS NÃO REPASSADOS.xlsx"
-
         csv_corr_raw = st.session_state.get("csv_correlacionado")
         if not csv_corr_raw:
             st.info("⬅️ Execute a correlação na aba **🔀 Correlação** primeiro.")
-        elif not _TEMPLATE_PATH.exists():
-            st.error(f"Template não encontrado: {_TEMPLATE_PATH.name}")
         else:
             from io import BytesIO
-            from openpyxl import load_workbook
             from openpyxl.styles import PatternFill, Font
 
             # Carregar dados de correlação
@@ -3762,7 +4117,13 @@ def main():
                 st.error("Não foi possível carregar os dados de correlação.")
                 st.stop()
 
-            valores_tuss  = _carregar_valores_tuss()
+            valores_tuss = _carregar_valores_tuss()
+            if not valores_tuss and not df_corr.empty:
+                with st.spinner("Calculando estimativas de valor a partir do histórico de repasse..."):
+                    _gerar_valores_tuss(df_corr)
+                _carregar_valores_tuss.clear()
+                valores_tuss = _carregar_valores_tuss()
+
             desc_por_cod  = _construir_desc_por_codigo(
                 pd.read_csv(BytesIO(st.session_state.get("csv_repasse_raw", b"")))
                 if st.session_state.get("csv_repasse_raw") else pd.DataFrame()
@@ -3798,29 +4159,97 @@ def main():
                         or _DESC_OFICIAL_COB.get(cod)
                         or f"Código TUSS {cod}")
 
-            def _valor_estimado(cod_esperado: str, cod_pago: str | None, tipo_origem: str) -> tuple[float | None, str]:
-                """Retorna (valor_estimado, confiança)."""
+            def _lookup_entry(cod: str, convenio: str = "") -> dict:
+                """Busca stats do código TUSS: primeiro específico por convênio, depois GERAL."""
+                c = str(cod).replace(".0", "").strip()
+                conv_norm = _normalizar_convenio(convenio) if convenio else ""
+                if conv_norm:
+                    entry = valores_tuss.get((conv_norm, c), {})
+                    if entry:
+                        return entry
+                return valores_tuss.get(c, {})   # fallback GERAL
+
+            def _valor_estimado(
+                cod_esperado: str,
+                cod_pago: str | None,
+                tipo_origem: str,
+                convenio: str = "",
+            ) -> tuple[float | None, str]:
+                """Retorna (valor_estimado, confiança) usando o valor mais recente por plano."""
                 ce = str(cod_esperado).replace(".0", "").strip()
                 cp = str(cod_pago or "").replace(".0", "").strip()
-                entry_esp = valores_tuss.get(ce, {})
+
+                def _val_base(entry: dict) -> float | None:
+                    """Retorna UltimoValor se disponível, senão Media."""
+                    v = entry.get("UltimoValor") or entry.get("Media")
+                    return float(v) if v is not None else None
+
+                entry_esp  = _lookup_entry(ce, convenio)
+                conf       = str(entry_esp.get("Confianca", "Sem dados"))
+
                 if tipo_origem == "downgrade" and cp:
-                    entry_pago = valores_tuss.get(cp, {})
-                    m_esp  = entry_esp.get("Media")
-                    m_pago = entry_pago.get("Media")
-                    if m_esp is not None and m_pago is not None:
-                        return round(float(m_esp) - float(m_pago), 2), str(entry_esp.get("Confianca", "Sem dados"))
+                    entry_pago = _lookup_entry(cp, convenio)
+                    v_esp  = _val_base(entry_esp)
+                    v_pago = _val_base(entry_pago)
+                    if v_esp is not None and v_pago is not None:
+                        return round(v_esp - v_pago, 2), conf
                 elif tipo_origem in ("ausente", "nao_faturado"):
-                    m = entry_esp.get("Media") or entry_esp.get("Mediana")
-                    if m is not None:
-                        return round(float(m), 2), str(entry_esp.get("Confianca", "Sem dados"))
+                    v = _val_base(entry_esp)
+                    if v is not None:
+                        return round(v, 2), conf
                 return None, "Sem dados"
 
             # ── Seção 1: Filtros ──────────────────────────────────────────────
             st.subheader("1. Filtros")
-            fc1, fc2 = st.columns(2)
-            convenios_disp = sorted(df_corr.get("Convenio_PRODUCAO", pd.Series()).dropna().unique().tolist())
-            filtro_conv = fc1.multiselect("Convênio", convenios_disp, default=convenios_disp, key="cob_conv")
 
+            # Montar mapa {ano: [meses ordenados]} a partir de Data_PRODUCAO
+            _NOMES_MESES = {1:"Jan",2:"Fev",3:"Mar",4:"Abr",5:"Mai",6:"Jun",
+                            7:"Jul",8:"Ago",9:"Set",10:"Out",11:"Nov",12:"Dez"}
+            _datas_dt = pd.to_datetime(
+                df_corr.get("Data_PRODUCAO", pd.Series()), dayfirst=True, errors="coerce"
+            ).dropna()
+            _periodos_disp: dict[int, list[int]] = {}
+            for _dt in _datas_dt:
+                _periodos_disp.setdefault(int(_dt.year), set()).add(int(_dt.month))
+            _periodos_disp = {a: sorted(m) for a, m in sorted(_periodos_disp.items())}
+
+            # Inicializar session_state para cada checkbox (default: marcado)
+            for _ano, _meses in _periodos_disp.items():
+                for _mes in _meses:
+                    _k = f"cob_ref_{_ano}_{_mes}"
+                    if _k not in st.session_state:
+                        st.session_state[_k] = True
+
+            # Callbacks para Todos/Nenhum por ano
+            def _marcar_ano_cob(ano_cb: int, valor: bool) -> None:
+                for _m in _periodos_disp.get(ano_cb, []):
+                    st.session_state[f"cob_ref_{ano_cb}_{_m}"] = valor
+
+            st.markdown("**Período de referência**")
+            if not _periodos_disp:
+                st.warning("Não foi possível identificar datas na coluna Data_PRODUCAO.")
+            for _ano, _meses in _periodos_disp.items():
+                _ca, _cb1, _cb2 = st.columns([5, 1, 1])
+                _ca.markdown(f"**{_ano}**")
+                _cb1.button("✅ Todos",  key=f"cob_btn_todos_{_ano}",
+                            on_click=_marcar_ano_cob, args=(_ano, True))
+                _cb2.button("☐ Nenhum", key=f"cob_btn_nenhum_{_ano}",
+                            on_click=_marcar_ano_cob, args=(_ano, False))
+                _cols_mes = st.columns(6)
+                for _i, _mes in enumerate(_meses):
+                    _cols_mes[_i % 6].checkbox(
+                        _NOMES_MESES[_mes], key=f"cob_ref_{_ano}_{_mes}"
+                    )
+
+            # Conjunto de (ano, mês) selecionados
+            filtro_periodos: set[tuple[int, int]] = {
+                (_ano, _mes)
+                for _ano, _meses in _periodos_disp.items()
+                for _mes in _meses
+                if st.session_state.get(f"cob_ref_{_ano}_{_mes}", True)
+            }
+
+            st.divider()
             fc3, fc4, fc5 = st.columns(3)
             inc_downgrade   = fc3.checkbox("🔴 Cobrado Como Simples",  value=True, key="cob_dg",
                 help="TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES — convênio usou código menor, ignorando o adicional")
@@ -3831,13 +4260,18 @@ def main():
 
             # ── Montar itens de cobrança ──────────────────────────────────────
             itens: list[dict] = []
-            status_col  = df_corr.get("StatusCorrelacao", pd.Series(dtype=str)).fillna("")
-            tuss_col_df = df_corr.get("StatusTUSS", pd.Series(dtype=str)).fillna("")
 
             for idx_row, row in df_corr.iterrows():
                 conv = str(row.get("Convenio_PRODUCAO", "")).strip()
-                if filtro_conv and conv not in filtro_conv:
-                    continue
+                # Filtro de período
+                try:
+                    _dt_row = pd.to_datetime(
+                        str(row.get("Data_PRODUCAO", "")), dayfirst=True, errors="coerce"
+                    )
+                    if pd.notna(_dt_row) and (_dt_row.year, _dt_row.month) not in filtro_periodos:
+                        continue
+                except Exception:
+                    pass
                 sc   = str(row.get("StatusCorrelacao", "")).upper()
                 st_t = str(row.get("StatusTUSS", "")).upper()
 
@@ -3845,7 +4279,7 @@ def main():
                 if inc_downgrade and st_t == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES":
                     cod_esp  = str(row.get("CodigosTUSS_Esperados", "")).strip()
                     cod_pago = str(row.get("CodigoTUSS_REPASSE", "")).replace(".0", "").strip()
-                    val, conf = _valor_estimado(cod_esp, cod_pago, "downgrade")
+                    val, conf = _valor_estimado(cod_esp, cod_pago, "downgrade", convenio=conv)
                     obs = (f"Faturado como {cod_pago} — {_desc_cod(cod_pago)}. "
                            f"Correto conforme TUSS: {cod_esp} — {_desc_cod(cod_esp)}. "
                            f"Solicita revisão e reprocessamento.")
@@ -3866,7 +4300,7 @@ def main():
                 elif inc_ausente and st_t == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE":
                     ausentes_str = str(row.get("CodigosTUSS_Ausentes", row.get("CodigosTUSS_Esperados", ""))).strip()
                     for cod_aus in [c.strip() for c in ausentes_str.split(",") if c.strip()]:
-                        val, conf = _valor_estimado(cod_aus, None, "ausente")
+                        val, conf = _valor_estimado(cod_aus, None, "ausente", convenio=conv)
                         proc_adic = str(row.get("ProcedimentosAdicionais_PRODUCAO", "")).strip()
                         nr_base   = str(row.get("NrAtendimento_REPASSE", "")).strip()
                         obs = (f"Procedimento adicional '{proc_adic}' realizado junto ao "
@@ -3893,7 +4327,7 @@ def main():
                     chave_base = _normalizar_chave_tuss(f"{proc_p}_")
                     entry_base = tabela_tuss_local.get(chave_base, {})
                     cod_base = str(entry_base.get("CodigosTUSS", "")).split(",")[0].strip() if entry_base else ""
-                    val, conf = _valor_estimado(cod_base, None, "nao_faturado") if cod_base else (None, "Sem dados")
+                    val, conf = _valor_estimado(cod_base, None, "nao_faturado", convenio=conv) if cod_base else (None, "Sem dados")
                     obs = (f"Procedimento {proc_p} realizado em {row.get('Data_PRODUCAO','')} "
                            f"não localizado no repasse. Solicita inclusão e faturamento.")
                     itens.append({"_origem": "nao_faturado", "_conf": conf,
@@ -3930,10 +4364,9 @@ def main():
 
                 # ── Seção 3: Cabeçalho do formulário ─────────────────────────
                 st.subheader("3. Cabeçalho do formulário")
-                hc1, hc2, hc3 = st.columns(3)
+                hc1, hc2 = st.columns(2)
                 campo_empresa = hc1.text_input("Empresa / Prestador", value="ENDOPRIME SERVICOS MEDICOS", key="cob_empresa")
-                campo_medico  = hc2.text_input("Médico Responsável", key="cob_medico")
-                campo_data    = hc3.date_input("Data do formulário", value=datetime.today(), key="cob_data")
+                campo_data    = hc2.date_input("Data do formulário", value=datetime.today(), key="cob_data")
 
                 # ── Seção 4: Opções de valor ──────────────────────────────────
                 st.subheader("4. Estimativa de valor")
@@ -3949,34 +4382,33 @@ def main():
                         "Células com confiança Baixa (<5 amostras) ficam destacadas em amarelo no XLSX."
                     ),
                 )
-                if not valores_tuss:
-                    st.caption("tuss_valores.csv não encontrado — execute _gerar_valores_tuss() para habilitar.")
-                elif n_baixa_conf > 0:
+                if n_baixa_conf > 0:
                     st.caption(f"⚠️ {n_baixa_conf} item(ns) com confiança Baixa ou Sem dados serão destacados em amarelo no formulário.")
 
                 # ── Seção 5: Gerar XLSX ───────────────────────────────────────
                 st.subheader("5. Gerar formulário")
                 if st.button("⚙️ Gerar Formulário XLSX", type="primary", key="cob_gerar"):
                     try:
-                        wb = load_workbook(_TEMPLATE_PATH)
+                        wb = _criar_workbook_formulario_template()
                         ws = wb["Plan1"]
 
-                        # Cabeçalho
+                        # Preencher campos de cabeçalho variáveis
                         ws["A7"] = campo_empresa
-                        ws["D7"] = campo_medico
                         ws["G7"] = f"DATA: {campo_data.strftime('%d/%m/%Y')}"
 
-                        # Limpar dados de exemplo (linha 11 em diante)
-                        for row_del in ws.iter_rows(min_row=11, max_row=ws.max_row):
-                            for cell in row_del:
-                                cell.value = None
+                        # Ordenar itens por DATA antes de escrever no XLSX
+                        _df_sort = pd.DataFrame(itens)
+                        _df_sort["_dt"] = pd.to_datetime(
+                            _df_sort["DATA"].astype(str), dayfirst=True, errors="coerce"
+                        )
+                        _df_sort = _df_sort.sort_values("_dt", na_position="last").drop(columns=["_dt"])
+                        itens_xlsx = _df_sort.to_dict("records")
 
                         # Estilos
                         _fill_baixa_conf = PatternFill("solid", fgColor="FFF3CD")
                         _font_normal = Font(name="Arial", size=9)
-                        _font_bold   = Font(name="Arial", size=9, bold=True)
 
-                        for i, item in enumerate(itens):
+                        for i, item in enumerate(itens_xlsx):
                             row_num = 11 + i
                             ws.cell(row_num, 1).value = item["DATA"]
                             ws.cell(row_num, 2).value = item["NR_ATEND"]
@@ -4003,11 +4435,12 @@ def main():
                         wb.save(buf)
                         buf.seek(0)
 
-                        conv_slug = (filtro_conv[0] if len(filtro_conv) == 1 else "todos").replace(" ", "_")[:20]
+                        _anos_sel = sorted({p[0] for p in filtro_periodos})
+                        _periodo_slug = "_".join(str(a) for a in _anos_sel)[:20] if _anos_sel else "todos"
                         ts_now = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        fname = f"formulario_cobranca_{conv_slug}_{ts_now}.xlsx"
+                        fname = f"formulario_cobranca_{_periodo_slug}_{ts_now}.xlsx"
 
-                        st.success(f"Formulário gerado: {len(itens)} linhas")
+                        st.success(f"Formulário gerado: {len(itens_xlsx)} linhas")
                         st.download_button(
                             label="⬇️ Baixar Formulário XLSX",
                             data=buf.getvalue(),
