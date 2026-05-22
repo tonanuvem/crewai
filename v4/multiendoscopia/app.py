@@ -2578,7 +2578,13 @@ def verificar_tuss_adicionais(
     return linhas_resultado
 
 
-def correlacionar_csv_arquivos(csv_producao: str, csv_repasse: str, limiar_similaridade: float = 0.65) -> str:
+def correlacionar_csv_arquivos(
+    csv_producao: str,
+    csv_repasse: str,
+    limiar_similaridade: float = 0.65,
+    tabela_tuss_preloaded: dict | None = None,
+    valores_tuss_preloaded: dict | None = None,
+) -> str:
     """
     Correlaciona dois CSVs (PRODUCAO e REPASSE) usando chave composta otimizada.
 
@@ -2900,12 +2906,17 @@ def correlacionar_csv_arquivos(csv_producao: str, csv_repasse: str, limiar_simil
         logger.info(f"Cache de similaridade: {len(cache_similaridade)} entradas")
 
         # ── Verificação TUSS pós-correlação ───────────────────────────────────
+        tabela_tuss: dict = {}
         try:
-            tabela_tuss = _carregar_tabela_tuss()
+            # Usa dados pré-carregados (passados da thread principal) para evitar
+            # falha do @st.cache_data em contexto de background thread
+            tabela_tuss = tabela_tuss_preloaded if tabela_tuss_preloaded is not None else _carregar_tabela_tuss()
             if tabela_tuss:
                 tuss_idx = _construir_indice_tuss_repasse(df_rep)
                 linhas_resultado = verificar_tuss_adicionais(linhas_resultado, df_rep, tabela_tuss, tuss_idx)
                 logger.info("Verificação TUSS concluída")
+            else:
+                logger.warning("tabela_tuss vazia — verificar_tuss_adicionais ignorada")
         except Exception as _e_tuss:
             logger.warning(f"Verificação TUSS ignorada: {_e_tuss}")
 
@@ -2915,7 +2926,10 @@ def correlacionar_csv_arquivos(csv_producao: str, csv_repasse: str, limiar_simil
 
         # ── Enriquecimento com valores e descrições TUSS ──────────────────────
         try:
-            _valores_tuss_corr = _carregar_valores_tuss()
+            _valores_tuss_corr = (
+                valores_tuss_preloaded if valores_tuss_preloaded is not None
+                else _carregar_valores_tuss()
+            )
             _desc_lookup_corr  = _construir_desc_por_tuss_code(tabela_tuss if tabela_tuss else {})
             df_final = _enriquecer_com_valores_tuss(df_final, _valores_tuss_corr, _desc_lookup_corr)
             logger.info("Enriquecimento TUSS concluído")
@@ -3852,11 +3866,31 @@ def main():
                             st.markdown("##### ⏳ Aguarde — correlacionando PRODUCAO × REPASSE...")
                             _prog_local = st.progress(0, "Iniciando correlação...")
 
+                            # Pré-carrega tabelas TUSS na thread principal (st.cache_data falha em threads secundárias)
+                            _tabela_tuss_pre: dict = {}
+                            _valores_tuss_pre: dict = {}
+                            try:
+                                _tabela_tuss_pre = _carregar_tabela_tuss()
+                                _valores_tuss_pre = _carregar_valores_tuss()
+                                logger.info(f"Tabelas TUSS pré-carregadas: {len(_tabela_tuss_pre)} entradas lookup, {len(_valores_tuss_pre)} entradas valores")
+                            except Exception as _e_pre:
+                                logger.warning(f"Pré-carga TUSS ignorada: {_e_pre}")
+
                             _res_local: dict = {"value": None, "error": None}
 
-                            def _run_local_corr(holder, _prod=csv_producao, _rep=csv_repasse):
+                            def _run_local_corr(
+                                holder,
+                                _prod=csv_producao,
+                                _rep=csv_repasse,
+                                _tab=_tabela_tuss_pre,
+                                _vals=_valores_tuss_pre,
+                            ):
                                 try:
-                                    holder["value"] = correlacionar_csv_arquivos(_prod, _rep)
+                                    holder["value"] = correlacionar_csv_arquivos(
+                                        _prod, _rep,
+                                        tabela_tuss_preloaded=_tab,
+                                        valores_tuss_preloaded=_vals,
+                                    )
                                 except Exception as _exc:
                                     holder["error"] = _exc
                                     logger.error(f"Erro em correlacionar_csv_arquivos: {_exc}", exc_info=True)
@@ -3893,7 +3927,13 @@ def main():
                                 st.session_state["csv_correlacionado"] = _res_local["value"]
                                 # Invalida caches dependentes do resultado anterior
                                 for _k in list(st.session_state.keys()):
-                                    if _k.startswith("corr_df_") or _k.startswith("cob_"):
+                                    if (
+                                        _k.startswith("corr_df_")
+                                        or _k.startswith("corr_style_")
+                                        or _k.startswith("corr_csv_dl_")
+                                        or _k.startswith("cob_")
+                                        or _k == "corr_show_table"
+                                    ):
                                         del st.session_state[_k]
                                 # Gera/atualiza tuss_valores.csv imediatamente
                                 try:
@@ -3990,7 +4030,13 @@ def main():
                                 st.session_state["csv_correlacionado"] = thread_result_corr["value"]
                                 # Invalida caches dependentes e gera tuss_valores.csv
                                 for _k in list(st.session_state.keys()):
-                                    if _k.startswith("corr_df_") or _k.startswith("cob_"):
+                                    if (
+                                        _k.startswith("corr_df_")
+                                        or _k.startswith("corr_style_")
+                                        or _k.startswith("corr_csv_dl_")
+                                        or _k.startswith("cob_")
+                                        or _k == "corr_show_table"
+                                    ):
                                         del st.session_state[_k]
                                 try:
                                     _df_fresh_llm = texto_para_dataframe(
@@ -4217,20 +4263,24 @@ def main():
 
                         convenios_disp = sorted(df_final.get("Convenio", pd.Series()).dropna().unique().tolist())
                         filtro_convenio = fcol1.multiselect(
-                            "Convênio", convenios_disp, default=convenios_disp
+                            "Convênio", convenios_disp,
+                            placeholder="Todos",
                         )
 
                         status_disp = sorted(df_final.get("StatusCorrelacao", pd.Series()).dropna().unique().tolist())
                         filtro_status = fcol2.multiselect(
-                            "Status Correlação", status_disp, default=status_disp
+                            "Status Correlação", status_disp,
+                            placeholder="Todos",
                         )
 
                         tuss_disp = sorted(df_final.get("CodigoTUSS", pd.Series()).dropna().unique().tolist())
                         filtro_tuss = fcol3.multiselect(
-                            "Código TUSS", tuss_disp, default=tuss_disp
+                            "Código TUSS", tuss_disp,
+                            placeholder="Todos",
                         )
 
                     # Filtro com máscara booleana — sem copiar o DataFrame inteiro
+                    # Seleção vazia = sem filtro (exibe tudo); coerente com placeholder="Todos"
                     _mask = pd.Series(True, index=df_final.index)
                     if "Convenio" in df_final.columns and filtro_convenio:
                         _mask &= df_final["Convenio"].isin(filtro_convenio)
@@ -4239,18 +4289,18 @@ def main():
                     if "CodigoTUSS" in df_final.columns and filtro_tuss:
                         _mask &= df_final["CodigoTUSS"].isin(filtro_tuss)
                     df_filtrado = df_final[_mask]
+                    _n_filtrado = len(df_filtrado)
 
                     # Styling vetorizado (axis=None): ~60× mais rápido que apply(axis=1) por linha
                     def _build_style_df(df: pd.DataFrame) -> pd.DataFrame:
                         import numpy as _np
-                        # Usa reindex para garantir índice alinhado com df (necessário após filtro booleano)
+                        # Índice alinhado — necessário após filtro booleano criar índice esparso
                         _empty = pd.Series("", index=df.index, dtype=str)
                         _st  = (df["StatusCorrelacao"].fillna("").str.upper()
                                 if "StatusCorrelacao" in df.columns else _empty)
                         _tss = (df["StatusTUSS"].fillna("").str.upper()
                                 if "StatusTUSS" in df.columns else _empty)
                         cor  = pd.Series("", index=df.index, dtype=str)
-                        # Aplica do menor para o maior nível de prioridade (último vence)
                         cor[_st.str.contains("NAO_IDENTIFICADO",    na=False)] = "background-color: #e2e3e5"
                         cor[_st.str.contains("DATA_FORA_DO_PERIODO",na=False)] = "background-color: #e2e3e5; color: #888"
                         cor[_st.str.contains("NAO_FATURADO",        na=False)] = "background-color: #f8d7da"
@@ -4272,17 +4322,72 @@ def main():
                             columns=df.columns, index=df.index,
                         )
 
-                    st.dataframe(
-                        df_filtrado.style.apply(_build_style_df, axis=None),
-                        use_container_width=True,
-                        height=460,
-                    )
+                    # ── Camada 1: botão gate ──────────────────────────────────
+                    # A tabela só é renderizada ao clicar — evita re-render em
+                    # qualquer outra interação da aba (filtros, sidebar, etc.)
+                    _btn_col, _ocultar_col, _ = st.columns([2, 2, 6])
+                    if not st.session_state.get("corr_show_table", False):
+                        if _btn_col.button(
+                            "👁️ Exibir tabela de resultados",
+                            key="btn_show_corr_table",
+                            type="primary",
+                            help=f"{_n_filtrado:,} linhas disponíveis",
+                        ):
+                            st.session_state["corr_show_table"] = True
+                            st.rerun()
+                    else:
+                        if _btn_col.button("🔒 Ocultar tabela", key="btn_hide_corr_table"):
+                            st.session_state["corr_show_table"] = False
+                            st.rerun()
 
-                    csv_download = df_filtrado.to_csv(index=False, sep=",", encoding="utf-8-sig")
+                        # ── Camada 3: cap de linhas na exibição interativa ────
+                        # Reduz custo de serialização do st.dataframe pelo WebSocket
+                        _MAX_ROWS_DISPLAY = 1000
+                        if _n_filtrado > _MAX_ROWS_DISPLAY:
+                            st.info(
+                                f"ℹ️ Exibindo as primeiras **{_MAX_ROWS_DISPLAY:,}** de "
+                                f"**{_n_filtrado:,}** linhas filtradas. "
+                                "Use os filtros para refinar ou baixe o CSV completo abaixo."
+                            )
+                            df_display = df_filtrado.head(_MAX_ROWS_DISPLAY)
+                        else:
+                            df_display = df_filtrado
+
+                        # ── Camada 2: cache do style por combinação de filtro ─
+                        # _build_style_df só reexecuta quando os filtros mudam;
+                        # interações não relacionadas reutilizam o resultado cacheado
+                        _filter_hash = hash((
+                            frozenset(filtro_convenio),
+                            frozenset(filtro_status),
+                            frozenset(filtro_tuss),
+                        ))
+                        _style_cache_key = f"corr_style_{_df_cache_key}_{_filter_hash}"
+                        if _style_cache_key not in st.session_state:
+                            # Remove caches de style anteriores para não acumular memória
+                            for _sk in [k for k in st.session_state if k.startswith("corr_style_")]:
+                                del st.session_state[_sk]
+                            st.session_state[_style_cache_key] = _build_style_df(df_display)
+                        _cached_style = st.session_state[_style_cache_key]
+
+                        st.dataframe(
+                            df_display.style.apply(lambda _: _cached_style, axis=None),
+                            use_container_width=True,
+                            height=460,
+                        )
+
+                    # ── Download CSV — sem cap, sempre disponível ─────────────
+                    # Cacheado em session_state para evitar to_csv() a cada render
+                    _csv_dl_key = f"corr_csv_dl_{_df_cache_key}_{hash((frozenset(filtro_convenio), frozenset(filtro_status), frozenset(filtro_tuss)))}"
+                    if _csv_dl_key not in st.session_state:
+                        for _ck in [k for k in st.session_state if k.startswith("corr_csv_dl_")]:
+                            del st.session_state[_ck]
+                        st.session_state[_csv_dl_key] = df_filtrado.to_csv(
+                            index=False, sep=",", encoding="utf-8-sig"
+                        )
                     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                     st.download_button(
-                        label="⬇️ Baixar CSV Correlacionado",
-                        data=csv_download.encode("utf-8-sig"),
+                        label=f"⬇️ Baixar CSV Correlacionado ({_n_filtrado:,} linhas)",
+                        data=st.session_state[_csv_dl_key].encode("utf-8-sig"),
                         file_name=f"correlacao_endoscopia_{ts}.csv",
                         mime="text/csv",
                         type="primary",
