@@ -2395,6 +2395,33 @@ def _construir_indice_tuss_repasse(df_rep: pd.DataFrame) -> set:
     return idx
 
 
+def _construir_desc_por_tuss_code(tabela_tuss: dict) -> dict:
+    """
+    Reverse-map {cod_tuss: descricao} a partir do tuss_lookup_table.
+    Prioridade: código que é codigo_base_proc_principal (descrição canônica)
+    sobre códigos adicionais. Ignora entradas 'Sem correspondência exata TUSS'.
+    """
+    desc_map: dict[str, str] = {}
+    # Primeira passagem: apenas entradas onde o código é o código-base (mais canônico)
+    for entry in tabela_tuss.values():
+        desc = str(entry.get("Descricao_REPASSE", "")).strip()
+        if not desc or "sem correspondência" in desc.lower():
+            continue
+        base = str(entry.get("codigo_base_proc_principal", "")).replace(".0", "").strip()
+        if base and base not in desc_map:
+            desc_map[base] = desc
+    # Segunda passagem: demais códigos (adicionais) da combinação
+    for entry in tabela_tuss.values():
+        desc = str(entry.get("Descricao_REPASSE", "")).strip()
+        if not desc or "sem correspondência" in desc.lower():
+            continue
+        for cod in str(entry.get("CodigosTUSS", "")).split(","):
+            cod = cod.strip().replace(".0", "")
+            if cod and cod != "nan" and cod not in desc_map:
+                desc_map[cod] = desc
+    return desc_map
+
+
 def _construir_desc_por_codigo(df_rep: pd.DataFrame) -> dict:
     """
     Retorna dict {codigo_tuss: descricao_oficial} extraído das linhas reais do REPASSE.
@@ -2411,6 +2438,61 @@ def _construir_desc_por_codigo(df_rep: pd.DataFrame) -> dict:
         .groupby("_cod").first().reset_index()
     )
     return dict(zip(grp["_cod"], grp["Procedimento"]))
+
+
+def _enriquecer_com_valores_tuss(
+    df: pd.DataFrame,
+    valores_tuss: dict,
+    desc_lookup: dict,
+) -> pd.DataFrame:
+    """
+    Adiciona ao DataFrame de correlação as colunas:
+      - ValorEstimado_TUSS: UltimoValor (ou Media) do código esperado, por convênio
+      - DescricaoTUSS: descrição canônica do código TUSS esperado (lookup_table → fallback)
+
+    Só preenche linhas com StatusTUSS indicando problema de cobrança:
+      TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES
+      TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE
+    Também preenche NAO_FATURADO_NO_REPASSE quando CodigosTUSS_Esperados estiver preenchido.
+    """
+    if df.empty or not valores_tuss:
+        df["ValorEstimado_TUSS"] = ""
+        df["DescricaoTUSS"]      = ""
+        return df
+
+    vals:  list = [""] * len(df)
+    descs: list = [""] * len(df)
+
+    for i, (_, row) in enumerate(df.iterrows()):
+        st_tuss = str(row.get("StatusTUSS", "")).upper()
+        st_corr = str(row.get("StatusCorrelacao", "")).upper()
+        cod = str(row.get("CodigosTUSS_Esperados", "")).split(",")[0].strip().replace(".0", "")
+        if not cod:
+            continue
+        elegivel = (
+            st_tuss in ("TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES",
+                        "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE")
+            or st_corr == "NAO_FATURADO_NO_REPASSE"
+        )
+        if not elegivel:
+            continue
+
+        conv = _normalizar_convenio(str(row.get("Convenio_PRODUCAO", "")))
+        # Lookup valor: específico por convênio → fallback GERAL
+        entry = (valores_tuss.get((conv, cod), {}) if conv else {}) or valores_tuss.get(cod, {})
+        v = entry.get("UltimoValor") or entry.get("Media")
+        if v is not None:
+            vals[i] = round(float(v), 2)
+
+        # Lookup descrição
+        descs[i] = (desc_lookup.get(cod)
+                    or str(entry.get("Descricao", ""))
+                    or f"Código TUSS {cod}")
+
+    df = df.copy()
+    df["ValorEstimado_TUSS"] = vals
+    df["DescricaoTUSS"]      = descs
+    return df
 
 
 def verificar_tuss_adicionais(
@@ -2830,6 +2912,15 @@ def correlacionar_csv_arquivos(csv_producao: str, csv_repasse: str, limiar_simil
         # ── Monta DataFrame final e ordena por data ───────────────────────────
         df_final = pd.DataFrame(linhas_resultado)
         df_final.fillna("", inplace=True)
+
+        # ── Enriquecimento com valores e descrições TUSS ──────────────────────
+        try:
+            _valores_tuss_corr = _carregar_valores_tuss()
+            _desc_lookup_corr  = _construir_desc_por_tuss_code(tabela_tuss if tabela_tuss else {})
+            df_final = _enriquecer_com_valores_tuss(df_final, _valores_tuss_corr, _desc_lookup_corr)
+            logger.info("Enriquecimento TUSS concluído")
+        except Exception as _e_enr:
+            logger.warning(f"Enriquecimento TUSS ignorado: {_e_enr}")
 
         if "Data_PRODUCAO" in df_final.columns:
             df_final["_sort_date"] = df_final.apply(
@@ -3360,11 +3451,17 @@ def main():
 
         if uploaded_files:
             st.divider()
-            with st.spinner("📖 Extraindo dados dos arquivos..."):
-                for file in uploaded_files:
-                    text = extract_text_from_file(file)
-                    if text:
-                        extratos_texto.append({"filename": file.name, "content": text})
+            _novos = [f for f in uploaded_files
+                      if f"extract_{f.name}_{f.size}" not in st.session_state]
+            if _novos:
+                with st.spinner(f"📖 Extraindo dados de {len(_novos)} arquivo(s)..."):
+                    for file in _novos:
+                        _ck = f"extract_{file.name}_{file.size}"
+                        st.session_state[_ck] = extract_text_from_file(file)
+            for file in uploaded_files:
+                _txt = st.session_state.get(f"extract_{file.name}_{file.size}")
+                if _txt:
+                    extratos_texto.append({"filename": file.name, "content": _txt})
 
             st.success(f"✅ {len(extratos_texto)} arquivo(s) processado(s)")
             st.session_state["extratos"] = extratos_texto
@@ -3609,7 +3706,7 @@ def main():
 
                 st.divider()
                 st.subheader("📄 Resultado Consolidado")
-                st.text_area("Relatório completo", value={result}, height=400)
+                st.text_area("Relatório completo", value=result, height=400)
                 c1, c2, c3 = st.columns(3)
                 c1.metric("Caracteres", len(result))
                 c2.metric("Palavras", len(result.split()))
@@ -3677,27 +3774,33 @@ def main():
                     "Verifique se os arquivos foram processados corretamente na aba Execução."
                 )
             else:
-                # Informações dos arquivos testados
-                df_prod_prev = texto_para_dataframe(csv_producao)
-                df_rep_prev = texto_para_dataframe(csv_repasse)
-                
-                linhas_prod = len(df_prod_prev) if df_prod_prev is not None else 0
-                linhas_rep = len(df_rep_prev) if df_rep_prev is not None else 0
-                
+                # Informações dos arquivos testados — cacheado para não re-parsear a cada render
+                _prev_key = f"corr_prev_{hash((csv_producao + csv_repasse)[:300])}"
+                if _prev_key not in st.session_state:
+                    _dp = texto_para_dataframe(csv_producao)
+                    _dr = texto_para_dataframe(csv_repasse)
+                    st.session_state[_prev_key] = (
+                        _dp if _dp is not None else pd.DataFrame(),
+                        _dr if _dr is not None else pd.DataFrame(),
+                    )
+                df_prod_prev, df_rep_prev = st.session_state[_prev_key]
+                linhas_prod = len(df_prod_prev)
+                linhas_rep  = len(df_rep_prev)
+
                 st.markdown("### 📁 Arquivos para serem correlacionados")
                 col_info1, col_info2 = st.columns(2)
                 with col_info1:
                     st.metric("**PRODUCAO:**", f"{linhas_prod} linhas")
                 with col_info2:
                     st.metric("**REPASSE:**", f"{linhas_rep} linhas")
-                
+
                 with st.expander(f"📋 Preview dos CSVs ({len(csvs_brutos)} arquivo(s))", expanded=False):
                     st.markdown("**PRODUCAO:**")
-                    if df_prod_prev is not None and not df_prod_prev.empty:
+                    if not df_prod_prev.empty:
                         st.dataframe(df_prod_prev.head(5), use_container_width=True)
-                    
+
                     st.markdown("**REPASSE:**")
-                    if df_rep_prev is not None and not df_rep_prev.empty:
+                    if not df_rep_prev.empty:
                         st.dataframe(df_rep_prev.head(5), use_container_width=True)
 
                 st.divider()
@@ -3743,34 +3846,77 @@ def main():
 
                 if st.button(btn_label_corr, type="primary", disabled=btn_disabled_corr):
                     
-                    # ── MODO LOCAL: correlacionar_csv_arquivos ───────────────────
+                    # ── MODO LOCAL: correlacionar_csv_arquivos (com thread para não travar UI) ──
                     if not usa_llm_corr:
                         with st.status("🔄 Correlacionando localmente...", expanded=True) as status_local:
-                            try:
-                                csv_correlacionado = correlacionar_csv_arquivos(csv_producao, csv_repasse)
-                                
-                                if csv_correlacionado:
-                                    st.session_state["csv_correlacionado"] = csv_correlacionado
-                                    status_local.update(
-                                        label="✅ Correlação local concluída!",
-                                        state="complete",
-                                        expanded=False
-                                    )
-                                else:
-                                    status_local.update(
-                                        label="❌ Erro na correlação local",
-                                        state="error",
-                                        expanded=True
-                                    )
-                                    st.error("Não foi possível gerar a correlação. Verifique os logs.")
-                            except Exception as exc:
+                            st.markdown("##### ⏳ Aguarde — correlacionando PRODUCAO × REPASSE...")
+                            _prog_local = st.progress(0, "Iniciando correlação...")
+
+                            _res_local: dict = {"value": None, "error": None}
+
+                            def _run_local_corr(holder, _prod=csv_producao, _rep=csv_repasse):
+                                try:
+                                    holder["value"] = correlacionar_csv_arquivos(_prod, _rep)
+                                except Exception as _exc:
+                                    holder["error"] = _exc
+                                    logger.error(f"Erro em correlacionar_csv_arquivos: {_exc}", exc_info=True)
+
+                            _t_local = threading.Thread(
+                                target=_run_local_corr, args=(_res_local,), daemon=True
+                            )
+                            _t_local.start()
+
+                            _step = 0
+                            _msgs = [
+                                "Indexando REPASSE...", "Correlacionando por nome e data...",
+                                "Aplicando fallbacks...", "Verificando códigos TUSS...",
+                                "Finalizando...",
+                            ]
+                            while _t_local.is_alive():
+                                _prog_local.progress(
+                                    min(0.9, _step * 0.18),
+                                    _msgs[min(_step, len(_msgs) - 1)],
+                                )
+                                _step += 1
+                                time.sleep(0.8)
+
+                            _t_local.join()
+                            _prog_local.progress(1.0, "Concluído!")
+
+                            if _res_local["error"]:
                                 status_local.update(
                                     label="❌ Erro na correlação local",
-                                    state="error",
-                                    expanded=True
+                                    state="error", expanded=True
                                 )
-                                st.error(f"Erro: {exc}")
-                                logger.error(f"Erro em correlacionar_csv_arquivos: {exc}", exc_info=True)
+                                st.error(f"Erro: {_res_local['error']}")
+                            elif _res_local["value"]:
+                                st.session_state["csv_correlacionado"] = _res_local["value"]
+                                # Invalida caches dependentes do resultado anterior
+                                for _k in list(st.session_state.keys()):
+                                    if _k.startswith("corr_df_") or _k.startswith("cob_"):
+                                        del st.session_state[_k]
+                                # Gera/atualiza tuss_valores.csv imediatamente
+                                try:
+                                    _df_fresh = texto_para_dataframe(
+                                        extrair_csv_do_texto(_res_local["value"])
+                                    )
+                                    if _df_fresh is not None and not _df_fresh.empty:
+                                        _prog_local.progress(1.0, "Calculando estimativas de valor TUSS...")
+                                        _gerar_valores_tuss(_df_fresh)
+                                        _carregar_valores_tuss.clear()
+                                        logger.info("tuss_valores.csv atualizado pós-correlação")
+                                except Exception as _e_tv:
+                                    logger.warning(f"tuss_valores pós-correlação ignorado: {_e_tv}")
+                                status_local.update(
+                                    label="✅ Correlação local concluída!",
+                                    state="complete", expanded=False
+                                )
+                            else:
+                                status_local.update(
+                                    label="❌ Erro na correlação local",
+                                    state="error", expanded=True
+                                )
+                                st.error("Não foi possível gerar a correlação. Verifique os logs.")
                     
                     # ── MODO LLM: Agente Correlacionador ──────────────────────────
                     else:
@@ -3842,6 +3988,20 @@ def main():
                                     label="✅ Correlação concluída!", state="complete", expanded=False
                                 )
                                 st.session_state["csv_correlacionado"] = thread_result_corr["value"]
+                                # Invalida caches dependentes e gera tuss_valores.csv
+                                for _k in list(st.session_state.keys()):
+                                    if _k.startswith("corr_df_") or _k.startswith("cob_"):
+                                        del st.session_state[_k]
+                                try:
+                                    _df_fresh_llm = texto_para_dataframe(
+                                        extrair_csv_do_texto(thread_result_corr["value"])
+                                    )
+                                    if _df_fresh_llm is not None and not _df_fresh_llm.empty:
+                                        _gerar_valores_tuss(_df_fresh_llm)
+                                        _carregar_valores_tuss.clear()
+                                        logger.info("tuss_valores.csv atualizado pós-correlação LLM")
+                                except Exception as _e_tv_llm:
+                                    logger.warning(f"tuss_valores pós-correlação LLM ignorado: {_e_tv_llm}")
 
             # ── Exibe resultado correlacionado ────────────────────────────────
             csv_correlacionado_raw = st.session_state.get("csv_correlacionado")
@@ -3849,11 +4009,19 @@ def main():
             if csv_correlacionado_raw:
                 st.divider()
 
-                csv_limpo = extrair_csv_do_texto(csv_correlacionado_raw)
-                csv_dados_str, resumo_str = separar_resumo_do_csv(csv_limpo)
+                # Cache do parse — evita re-parsear 5000+ linhas a cada interação de filtro
+                _df_cache_key = f"corr_df_{hash(csv_correlacionado_raw[:300])}"
+                if _df_cache_key not in st.session_state:
+                    _csv_limpo = extrair_csv_do_texto(csv_correlacionado_raw)
+                    _csv_dados_str, _resumo_str = separar_resumo_do_csv(_csv_limpo)
+                    st.session_state[_df_cache_key] = (
+                        texto_para_dataframe(_csv_dados_str),
+                        _csv_dados_str,
+                        _resumo_str,
+                    )
+                df_final, csv_dados_str, resumo_str = st.session_state[_df_cache_key]
 
                 st.subheader("📊 Tabela Correlacionada")
-                df_final = texto_para_dataframe(csv_dados_str)
 
                 if df_final is not None and not df_final.empty:
                     col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
@@ -3959,6 +4127,50 @@ def main():
                             help="Abra a aba 📋 Gerar Cobrança para exportar o formulário de revisão",
                         )
 
+                        # ── Estimativa de impacto financeiro ──────────────────
+                        _val_col = df_final.get("ValorEstimado_TUSS", pd.Series(dtype=str))
+                        _val_num = pd.to_numeric(_val_col, errors="coerce").dropna()
+                        if not _val_num.empty:
+                            st.markdown("---")
+                            st.markdown("#### 💰 Estimativa de Impacto Financeiro")
+                            _total_est = _val_num.sum()
+                            _n_com_valor = len(_val_num)
+                            _n_sem_valor = (n_tuss_downgrade + n_tuss_ausente) - _n_com_valor
+                            iv1, iv2, iv3 = st.columns(3)
+                            iv1.metric(
+                                "💵 Valor Total Estimado",
+                                f"R$ {_total_est:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                                help="Soma dos UltimoValor por convênio para todos os itens elegíveis à cobrança",
+                            )
+                            iv2.metric(
+                                "✅ Itens com estimativa",
+                                int(_n_com_valor),
+                                help="Itens cujo código TUSS consta em tuss_valores.csv",
+                            )
+                            iv3.metric(
+                                "⚠️ Itens sem estimativa",
+                                int(_n_sem_valor) if _n_sem_valor >= 0 else 0,
+                                help="Itens com código TUSS ainda sem histórico de valor",
+                            )
+                            # Breakdown por convênio
+                            _conv_col = df_final.get("Convenio_PRODUCAO", df_final.get("Convenio", pd.Series(dtype=str)))
+                            _mask_elig = _val_col.replace("", float("nan")).notna()
+                            if _mask_elig.any():
+                                _df_breakdown = (
+                                    df_final[_mask_elig]
+                                    .assign(_val_num=pd.to_numeric(_val_col[_mask_elig], errors="coerce"))
+                                    .groupby(_conv_col[_mask_elig].fillna("(sem convênio)"))
+                                    .agg(Itens=("_val_num", "count"), ValorTotal=("_val_num", "sum"))
+                                    .sort_values("ValorTotal", ascending=False)
+                                    .reset_index()
+                                )
+                                _df_breakdown.columns = ["Convênio", "Itens", "Valor Total (R$)"]
+                                _df_breakdown["Valor Total (R$)"] = _df_breakdown["Valor Total (R$)"].map(
+                                    lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                                )
+                                with st.expander("📊 Breakdown por convênio", expanded=False):
+                                    st.dataframe(_df_breakdown, use_container_width=True, hide_index=True)
+
                     # ── Linha 2: pendências e alertas ─────────────────────────
                     st.markdown("#### Pendências e alertas")
                     pc1, pc2, pc3, pc4, pc5 = st.columns(5)
@@ -4018,53 +4230,46 @@ def main():
                             "Código TUSS", tuss_disp, default=tuss_disp
                         )
 
-                    df_filtrado = df_final.copy()
-                    if "Convenio" in df_filtrado.columns and filtro_convenio:
-                        df_filtrado = df_filtrado[df_filtrado["Convenio"].isin(filtro_convenio)]
-                    if "StatusCorrelacao" in df_filtrado.columns and filtro_status:
-                        df_filtrado = df_filtrado[df_filtrado["StatusCorrelacao"].isin(filtro_status)]
-                    if "CodigoTUSS" in df_filtrado.columns and filtro_tuss:
-                        df_filtrado = df_filtrado[df_filtrado["CodigoTUSS"].isin(filtro_tuss)]
+                    # Filtro com máscara booleana — sem copiar o DataFrame inteiro
+                    _mask = pd.Series(True, index=df_final.index)
+                    if "Convenio" in df_final.columns and filtro_convenio:
+                        _mask &= df_final["Convenio"].isin(filtro_convenio)
+                    if "StatusCorrelacao" in df_final.columns and filtro_status:
+                        _mask &= df_final["StatusCorrelacao"].isin(filtro_status)
+                    if "CodigoTUSS" in df_final.columns and filtro_tuss:
+                        _mask &= df_final["CodigoTUSS"].isin(filtro_tuss)
+                    df_filtrado = df_final[_mask]
 
-                    def highlight_status(row):
-                        status = str(row.get("StatusCorrelacao", "")).upper()
-                        tuss   = str(row.get("StatusTUSS", "")).upper()
-                        # Prioridade TUSS sobre status base quando há problema de cobrança
-                        if tuss == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES":
-                            return ["background-color: #c0392b; color: #fff"] * len(row)  # vermelho — downgrade
-                        elif tuss == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE":
-                            return ["background-color: #e67e22; color: #fff"] * len(row)  # laranja escuro — ausente
-                        elif tuss == "TUSS_PROC_ADICIONAL_RECONHECIDO":
-                            return ["background-color: #d4edda"] * len(row)  # verde — correto
-                        elif tuss == "TUSS_TODOS_CODIGOS_ADICIONAIS_FATURADOS":
-                            return ["background-color: #d4edda"] * len(row)  # verde — correto
-                        # Status de correlação existentes
-                        if "PROCEDIMENTO_DIVERGENTE" in status:
-                            return ["background-color: #ffc107; color: #000"] * len(row)  # laranja — revisar
-                        elif status == "CORRELACIONADO":
-                            return ["background-color: #d4edda"] * len(row)  # verde
-                        elif "VIA_NR_ATENDIMENTO" in status:
-                            return ["background-color: #cce5ff"] * len(row)  # azul claro
-                        elif "PROCEDIMENTO_ADICIONAL" in status:
-                            return ["background-color: #d4edda"] * len(row)  # verde
-                        elif "FALLBACK_1" in status:
-                            return ["background-color: #fff3cd"] * len(row)  # amarelo
-                        elif "FALLBACK_2" in status:
-                            return ["background-color: #d1ecf1"] * len(row)  # azul
-                        elif "DIVERGENCIA" in status:
-                            return ["background-color: #fff3cd"] * len(row)
-                        elif "GLOSA" in status:
-                            return ["background-color: #f8d7da"] * len(row)
-                        elif "NAO_FATURADO" in status:
-                            return ["background-color: #f8d7da"] * len(row)
-                        elif "DATA_FORA_DO_PERIODO" in status:
-                            return ["background-color: #e2e3e5; color: #888"] * len(row)  # cinza
-                        elif "NAO_IDENTIFICADO" in status:
-                            return ["background-color: #e2e3e5"] * len(row)
-                        return [""] * len(row)
+                    # Styling vetorizado (axis=None): ~60× mais rápido que apply(axis=1) por linha
+                    def _build_style_df(df: pd.DataFrame) -> pd.DataFrame:
+                        import numpy as _np
+                        _st  = df.get("StatusCorrelacao", pd.Series(dtype=str)).fillna("").str.upper()
+                        _tss = df.get("StatusTUSS",       pd.Series(dtype=str)).fillna("").str.upper()
+                        cor  = pd.Series("", index=df.index)
+                        # Aplica do menor para o maior nível de prioridade (último vence)
+                        cor[_st.str.contains("NAO_IDENTIFICADO",    na=False)] = "background-color: #e2e3e5"
+                        cor[_st.str.contains("DATA_FORA_DO_PERIODO",na=False)] = "background-color: #e2e3e5; color: #888"
+                        cor[_st.str.contains("NAO_FATURADO",        na=False)] = "background-color: #f8d7da"
+                        cor[_st.str.contains("GLOSA",               na=False)] = "background-color: #f8d7da"
+                        cor[_st.str.contains("DIVERGENCIA",         na=False)] = "background-color: #fff3cd"
+                        cor[_st.str.contains("FALLBACK_2",          na=False)] = "background-color: #d1ecf1"
+                        cor[_st.str.contains("FALLBACK_1",          na=False)] = "background-color: #fff3cd"
+                        cor[_st.str.contains("PROCEDIMENTO_ADICIONAL", na=False)] = "background-color: #d4edda"
+                        cor[_st.str.contains("VIA_NR_ATENDIMENTO",  na=False)] = "background-color: #cce5ff"
+                        cor[_st == "CORRELACIONADO"]                            = "background-color: #d4edda"
+                        cor[_st.str.contains("PROCEDIMENTO_DIVERGENTE", na=False)] = "background-color: #ffc107; color: #000"
+                        # TUSS sobrescreve — máxima prioridade
+                        cor[_tss == "TUSS_PROC_ADICIONAL_RECONHECIDO"]           = "background-color: #d4edda"
+                        cor[_tss == "TUSS_TODOS_CODIGOS_ADICIONAIS_FATURADOS"]   = "background-color: #d4edda"
+                        cor[_tss == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE"]  = "background-color: #e67e22; color: #fff"
+                        cor[_tss == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES"]  = "background-color: #c0392b; color: #fff"
+                        return pd.DataFrame(
+                            _np.repeat(cor.values[:, None], len(df.columns), axis=1),
+                            columns=df.columns, index=df.index,
+                        )
 
                     st.dataframe(
-                        df_filtrado.style.apply(highlight_status, axis=1),
+                        df_filtrado.style.apply(_build_style_df, axis=None),
                         use_container_width=True,
                         height=460,
                     )
@@ -4109,10 +4314,22 @@ def main():
             from io import BytesIO
             from openpyxl.styles import PatternFill, Font
 
-            # Carregar dados de correlação
-            _csv_limpo  = extrair_csv_do_texto(csv_corr_raw)
-            _csv_dados, _ = separar_resumo_do_csv(_csv_limpo)
-            df_corr = texto_para_dataframe(_csv_dados)
+            # Carregar dados de correlação — cacheado para não re-parsear em cada interação
+            _cob_df_key = f"cob_df_{hash(csv_corr_raw[:300])}"
+            if _cob_df_key not in st.session_state:
+                _csv_limpo = extrair_csv_do_texto(csv_corr_raw)
+                _csv_dados, _ = separar_resumo_do_csv(_csv_limpo)
+                _df_tmp = texto_para_dataframe(_csv_dados)
+                if _df_tmp is not None and not _df_tmp.empty:
+                    # Pré-computar colunas de data vetorizadas uma única vez
+                    _df_tmp["_dt_prod"] = pd.to_datetime(
+                        _df_tmp.get("Data_PRODUCAO", pd.Series(dtype=str)),
+                        dayfirst=True, errors="coerce",
+                    )
+                    _df_tmp["_ano_prod"] = _df_tmp["_dt_prod"].dt.year.astype("Int64")
+                    _df_tmp["_mes_prod"] = _df_tmp["_dt_prod"].dt.month.astype("Int64")
+                st.session_state[_cob_df_key] = _df_tmp
+            df_corr = st.session_state[_cob_df_key]
             if df_corr is None or df_corr.empty:
                 st.error("Não foi possível carregar os dados de correlação.")
                 st.stop()
@@ -4153,10 +4370,14 @@ def main():
                 "40813320": "Colocação De Stent Biliar",
             }
 
+            # Reverse-map de descrições canônicas a partir do tuss_lookup_table
+            _desc_tuss_lookup = _construir_desc_por_tuss_code(_carregar_tabela_tuss())
+
             def _desc_cod(cod: str) -> str:
                 cod = str(cod).replace(".0", "").strip()
-                return (desc_por_cod.get(cod)
-                        or _DESC_OFICIAL_COB.get(cod)
+                return (desc_por_cod.get(cod)           # 1º: REPASSE real
+                        or _desc_tuss_lookup.get(cod)   # 2º: tuss_lookup_table ← novo
+                        or _DESC_OFICIAL_COB.get(cod)   # 3º: dict hardcoded
                         or f"Código TUSS {cod}")
 
             def _lookup_entry(cod: str, convenio: str = "") -> dict:
@@ -4202,14 +4423,12 @@ def main():
             # ── Seção 1: Filtros ──────────────────────────────────────────────
             st.subheader("1. Filtros")
 
-            # Montar mapa {ano: [meses ordenados]} a partir de Data_PRODUCAO
+            # Montar mapa {ano: [meses ordenados]} — usa coluna _dt_prod já pré-computada
             _NOMES_MESES = {1:"Jan",2:"Fev",3:"Mar",4:"Abr",5:"Mai",6:"Jun",
                             7:"Jul",8:"Ago",9:"Set",10:"Out",11:"Nov",12:"Dez"}
-            _datas_dt = pd.to_datetime(
-                df_corr.get("Data_PRODUCAO", pd.Series()), dayfirst=True, errors="coerce"
-            ).dropna()
+            _dt_col_cob = df_corr.get("_dt_prod", pd.Series(dtype="datetime64[ns]")).dropna()
             _periodos_disp: dict[int, list[int]] = {}
-            for _dt in _datas_dt:
+            for _dt in _dt_col_cob:
                 _periodos_disp.setdefault(int(_dt.year), set()).add(int(_dt.month))
             _periodos_disp = {a: sorted(m) for a, m in sorted(_periodos_disp.items())}
 
@@ -4259,89 +4478,94 @@ def main():
                 help="NAO_FATURADO_NO_REPASSE — procedimento inteiro ausente do repasse")
 
             # ── Montar itens de cobrança ──────────────────────────────────────
-            itens: list[dict] = []
+            # Cache do loop pesado: chave = hash dos dados + flags de tipo (sem filtro de período)
+            _itens_key = f"cob_itens_{hash(csv_corr_raw[:300])}_{inc_downgrade}_{inc_ausente}_{inc_nao_faturado}"
+            if _itens_key not in st.session_state:
+                _todos_itens: list[dict] = []
+                # Carregar tabela TUSS uma única vez (fora do loop)
+                _tabela_tuss_loop = _carregar_tabela_tuss()
+                for _idx_row, _row in df_corr.iterrows():
+                    _conv = str(_row.get("Convenio_PRODUCAO", "")).strip()
+                    _ano_r = _row.get("_ano_prod")
+                    _mes_r = _row.get("_mes_prod")
+                    _ano_i = int(_ano_r) if pd.notna(_ano_r) else None
+                    _mes_i = int(_mes_r) if pd.notna(_mes_r) else None
+                    _sc   = str(_row.get("StatusCorrelacao", "")).upper()
+                    _st_t = str(_row.get("StatusTUSS", "")).upper()
 
-            for idx_row, row in df_corr.iterrows():
-                conv = str(row.get("Convenio_PRODUCAO", "")).strip()
-                # Filtro de período
-                try:
-                    _dt_row = pd.to_datetime(
-                        str(row.get("Data_PRODUCAO", "")), dayfirst=True, errors="coerce"
-                    )
-                    if pd.notna(_dt_row) and (_dt_row.year, _dt_row.month) not in filtro_periodos:
-                        continue
-                except Exception:
-                    pass
-                sc   = str(row.get("StatusCorrelacao", "")).upper()
-                st_t = str(row.get("StatusTUSS", "")).upper()
-
-                # Origem 1 — downgrade
-                if inc_downgrade and st_t == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES":
-                    cod_esp  = str(row.get("CodigosTUSS_Esperados", "")).strip()
-                    cod_pago = str(row.get("CodigoTUSS_REPASSE", "")).replace(".0", "").strip()
-                    val, conf = _valor_estimado(cod_esp, cod_pago, "downgrade", convenio=conv)
-                    obs = (f"Faturado como {cod_pago} — {_desc_cod(cod_pago)}. "
-                           f"Correto conforme TUSS: {cod_esp} — {_desc_cod(cod_esp)}. "
-                           f"Solicita revisão e reprocessamento.")
-                    itens.append({"_origem": "downgrade", "_conf": conf,
-                        "DATA": row.get("Data_PRODUCAO", ""),
-                        "NR_ATEND": row.get("NrAtendimento_REPASSE", ""),
-                        "PACIENTE": row.get("Paciente_PRODUCAO", ""),
-                        "CONVENIO": conv,
-                        "PRESTADOR": row.get("MedicoExecutor_PRODUCAO", ""),
-                        "CODIGO": cod_esp,
-                        "PROCEDIMENTO": _desc_cod(cod_esp),
-                        "FUNCAO": row.get("Funcao_REPASSE", "Cirurgiao"),
-                        "OBSERVACAO": obs,
-                        "VALOR": val,
-                    })
-
-                # Origem 2 — código adicional ausente
-                elif inc_ausente and st_t == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE":
-                    ausentes_str = str(row.get("CodigosTUSS_Ausentes", row.get("CodigosTUSS_Esperados", ""))).strip()
-                    for cod_aus in [c.strip() for c in ausentes_str.split(",") if c.strip()]:
-                        val, conf = _valor_estimado(cod_aus, None, "ausente", convenio=conv)
-                        proc_adic = str(row.get("ProcedimentosAdicionais_PRODUCAO", "")).strip()
-                        nr_base   = str(row.get("NrAtendimento_REPASSE", "")).strip()
-                        obs = (f"Procedimento adicional '{proc_adic}' realizado junto ao "
-                               f"{row.get('Procedimento_PRODUCAO','')} não consta no repasse. "
-                               f"Código TUSS: {cod_aus}. "
-                               f"Nr atendimento base: {nr_base}. Solicita inclusão.")
-                        itens.append({"_origem": "ausente", "_conf": conf,
-                            "DATA": row.get("Data_PRODUCAO", ""),
-                            "NR_ATEND": nr_base,
-                            "PACIENTE": row.get("Paciente_PRODUCAO", ""),
-                            "CONVENIO": conv,
-                            "PRESTADOR": row.get("MedicoExecutor_PRODUCAO", ""),
-                            "CODIGO": cod_aus,
-                            "PROCEDIMENTO": _desc_cod(cod_aus),
-                            "FUNCAO": row.get("Funcao_REPASSE", "Cirurgiao"),
-                            "OBSERVACAO": obs,
-                            "VALOR": val,
+                    if inc_downgrade and _st_t == "TUSS_PROC_ADICIONAL_COBRADO_COMO_SIMPLES":
+                        _cod_esp  = str(_row.get("CodigosTUSS_Esperados", "")).strip()
+                        _cod_pago = str(_row.get("CodigoTUSS_REPASSE", "")).replace(".0", "").strip()
+                        _val, _conf = _valor_estimado(_cod_esp, _cod_pago, "downgrade", convenio=_conv)
+                        _obs = (f"Faturado como {_cod_pago} — {_desc_cod(_cod_pago)}. "
+                                f"Correto conforme TUSS: {_cod_esp} — {_desc_cod(_cod_esp)}. "
+                                f"Solicita revisão e reprocessamento.")
+                        _todos_itens.append({"_origem": "downgrade", "_conf": _conf,
+                            "_ano": _ano_i, "_mes": _mes_i,
+                            "DATA": _row.get("Data_PRODUCAO", ""),
+                            "NR_ATEND": _row.get("NrAtendimento_REPASSE", ""),
+                            "PACIENTE": _row.get("Paciente_PRODUCAO", ""),
+                            "CONVENIO": _conv,
+                            "PRESTADOR": _row.get("MedicoExecutor_PRODUCAO", ""),
+                            "CODIGO": _cod_esp,
+                            "PROCEDIMENTO": _desc_cod(_cod_esp),
+                            "FUNCAO": _row.get("Funcao_REPASSE", "Cirurgiao"),
+                            "OBSERVACAO": _obs,
+                            "VALOR": _val,
                         })
+                    elif inc_ausente and _st_t == "TUSS_CODIGO_ADICIONAL_AUSENTE_NO_REPASSE":
+                        _ausentes_str = str(_row.get("CodigosTUSS_Ausentes", _row.get("CodigosTUSS_Esperados", ""))).strip()
+                        for _cod_aus in [c.strip() for c in _ausentes_str.split(",") if c.strip()]:
+                            _val, _conf = _valor_estimado(_cod_aus, None, "ausente", convenio=_conv)
+                            _proc_adic = str(_row.get("ProcedimentosAdicionais_PRODUCAO", "")).strip()
+                            _nr_base   = str(_row.get("NrAtendimento_REPASSE", "")).strip()
+                            _obs = (f"Procedimento adicional '{_proc_adic}' realizado junto ao "
+                                    f"{_row.get('Procedimento_PRODUCAO','')} não consta no repasse. "
+                                    f"Código TUSS: {_cod_aus}. "
+                                    f"Nr atendimento base: {_nr_base}. Solicita inclusão.")
+                            _todos_itens.append({"_origem": "ausente", "_conf": _conf,
+                                "_ano": _ano_i, "_mes": _mes_i,
+                                "DATA": _row.get("Data_PRODUCAO", ""),
+                                "NR_ATEND": _nr_base,
+                                "PACIENTE": _row.get("Paciente_PRODUCAO", ""),
+                                "CONVENIO": _conv,
+                                "PRESTADOR": _row.get("MedicoExecutor_PRODUCAO", ""),
+                                "CODIGO": _cod_aus,
+                                "PROCEDIMENTO": _desc_cod(_cod_aus),
+                                "FUNCAO": _row.get("Funcao_REPASSE", "Cirurgiao"),
+                                "OBSERVACAO": _obs,
+                                "VALOR": _val,
+                            })
+                    elif inc_nao_faturado and _sc == "NAO_FATURADO_NO_REPASSE":
+                        _proc_p = str(_row.get("Procedimento_PRODUCAO", "")).strip()
+                        _chave_base = _normalizar_chave_tuss(f"{_proc_p}_")
+                        _entry_base = _tabela_tuss_loop.get(_chave_base, {})
+                        _cod_base = str(_entry_base.get("CodigosTUSS", "")).split(",")[0].strip() if _entry_base else ""
+                        _val, _conf = _valor_estimado(_cod_base, None, "nao_faturado", convenio=_conv) if _cod_base else (None, "Sem dados")
+                        _obs = (f"Procedimento {_proc_p} realizado em {_row.get('Data_PRODUCAO','')} "
+                                f"não localizado no repasse. Solicita inclusão e faturamento.")
+                        _todos_itens.append({"_origem": "nao_faturado", "_conf": _conf,
+                            "_ano": _ano_i, "_mes": _mes_i,
+                            "DATA": _row.get("Data_PRODUCAO", ""),
+                            "NR_ATEND": _row.get("NrAtendimento_PRODUCAO", ""),
+                            "PACIENTE": _row.get("Paciente_PRODUCAO", ""),
+                            "CONVENIO": _conv,
+                            "PRESTADOR": _row.get("MedicoExecutor_PRODUCAO", ""),
+                            "CODIGO": _cod_base,
+                            "PROCEDIMENTO": _desc_cod(_cod_base) if _cod_base else _proc_p,
+                            "FUNCAO": "Cirurgiao",
+                            "OBSERVACAO": _obs,
+                            "VALOR": _val,
+                        })
+                st.session_state[_itens_key] = _todos_itens
 
-                # Origem 3 — procedimento não faturado
-                elif inc_nao_faturado and sc == "NAO_FATURADO_NO_REPASSE":
-                    tabela_tuss_local = _carregar_tabela_tuss()
-                    proc_p = str(row.get("Procedimento_PRODUCAO", "")).strip()
-                    chave_base = _normalizar_chave_tuss(f"{proc_p}_")
-                    entry_base = tabela_tuss_local.get(chave_base, {})
-                    cod_base = str(entry_base.get("CodigosTUSS", "")).split(",")[0].strip() if entry_base else ""
-                    val, conf = _valor_estimado(cod_base, None, "nao_faturado", convenio=conv) if cod_base else (None, "Sem dados")
-                    obs = (f"Procedimento {proc_p} realizado em {row.get('Data_PRODUCAO','')} "
-                           f"não localizado no repasse. Solicita inclusão e faturamento.")
-                    itens.append({"_origem": "nao_faturado", "_conf": conf,
-                        "DATA": row.get("Data_PRODUCAO", ""),
-                        "NR_ATEND": row.get("NrAtendimento_PRODUCAO", ""),
-                        "PACIENTE": row.get("Paciente_PRODUCAO", ""),
-                        "CONVENIO": conv,
-                        "PRESTADOR": row.get("MedicoExecutor_PRODUCAO", ""),
-                        "CODIGO": cod_base,
-                        "PROCEDIMENTO": _desc_cod(cod_base) if cod_base else proc_p,
-                        "FUNCAO": "Cirurgiao",
-                        "OBSERVACAO": obs,
-                        "VALOR": val,
-                    })
+            # Filtro de período aplicado como máscara barata sobre o cache
+            _todos_itens = st.session_state[_itens_key]
+            itens = [
+                i for i in _todos_itens
+                if (i["_ano"], i["_mes"]) in filtro_periodos
+                or i["_ano"] is None
+            ]
 
             # ── Seção 2: Prévia ───────────────────────────────────────────────
             st.subheader("2. Prévia dos itens selecionados")
@@ -4368,22 +4592,75 @@ def main():
                 campo_empresa = hc1.text_input("Empresa / Prestador", value="ENDOPRIME SERVICOS MEDICOS", key="cob_empresa")
                 campo_data    = hc2.date_input("Data do formulário", value=datetime.today(), key="cob_data")
 
-                # ── Seção 4: Opções de valor ──────────────────────────────────
+                # ── Seção 4: Estimativa de valor ─────────────────────────────
                 st.subheader("4. Estimativa de valor")
-                estimar_valor = st.checkbox(
-                    "Estimar valor da cobrança na coluna VALOR",
-                    value=bool(valores_tuss),
-                    disabled=not bool(valores_tuss),
-                    key="cob_estimar",
-                    help=(
-                        "Usa a média dos valores pagos pelo convênio no período disponível em tuss_valores.csv. "
-                        "Para Origem 1 (downgrade): estima a DIFERENÇA entre o código esperado e o pago. "
-                        "Para Origem 2 e 3: estima o valor integral do código ausente. "
-                        "Células com confiança Baixa (<5 amostras) ficam destacadas em amarelo no XLSX."
-                    ),
-                )
-                if n_baixa_conf > 0:
-                    st.caption(f"⚠️ {n_baixa_conf} item(ns) com confiança Baixa ou Sem dados serão destacados em amarelo no formulário.")
+                if not valores_tuss:
+                    st.info("ℹ️ Sem dados de valor disponíveis. Execute a correlação para gerar estimativas por convênio.")
+                    estimar_valor = False
+                else:
+                    # Códigos presentes nos itens selecionados
+                    _codigos_itens = {str(i.get("CODIGO", "")).strip() for i in itens if i.get("CODIGO")}
+                    # Montar tabela de referência a partir de tuss_valores.csv
+                    try:
+                        _df_vals_ref = pd.read_csv(_TUSS_VALORES_PATH, dtype={"CodigoTUSS": str})
+                        # Compatibilidade com schema antigo (sem Convenio/UltimoValor)
+                        if "Convenio" not in _df_vals_ref.columns:
+                            _df_vals_ref["Convenio"]    = "GERAL"
+                        if "UltimoValor" not in _df_vals_ref.columns:
+                            _df_vals_ref["UltimoValor"] = _df_vals_ref.get("Media", float("nan"))
+                        if "Qtd" not in _df_vals_ref.columns:
+                            _df_vals_ref["Qtd"] = _df_vals_ref.get("Qtd_amostras", 0)
+                        if "Descricao" not in _df_vals_ref.columns:
+                            _df_vals_ref["Descricao"] = ""
+                        _ano_ref = int(_df_vals_ref["Ano"].max())
+                        _df_vals_ref = _df_vals_ref[_df_vals_ref["Ano"] == _ano_ref].copy()
+                        # Filtrar apenas os códigos que aparecem nos itens selecionados
+                        if _codigos_itens:
+                            _df_vals_ref = _df_vals_ref[_df_vals_ref["CodigoTUSS"].isin(_codigos_itens)]
+                        if not _df_vals_ref.empty:
+                            _df_disp = _df_vals_ref[
+                                ["CodigoTUSS", "Descricao", "Convenio", "UltimoValor", "Media", "Qtd", "Confianca"]
+                            ].rename(columns={
+                                "CodigoTUSS":  "Código TUSS",
+                                "Descricao":   "Procedimento",
+                                "Convenio":    "Convênio",
+                                "UltimoValor": "Último Valor (R$)",
+                                "Media":       "Média (R$)",
+                                "Qtd":         "Amostras",
+                                "Confianca":   "Confiança",
+                            })
+                            # GERAL por último dentro de cada código
+                            _df_disp = _df_disp.sort_values(
+                                ["Código TUSS", "Convênio"],
+                                key=lambda s: s.where(s != "GERAL", "ZZZZ"),
+                            )
+                            st.dataframe(
+                                _df_disp,
+                                use_container_width=True,
+                                hide_index=True,
+                                height=min(35 * len(_df_disp) + 40, 320),
+                                column_config={
+                                    "Último Valor (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                                    "Média (R$)":        st.column_config.NumberColumn(format="R$ %.2f"),
+                                },
+                            )
+                        else:
+                            st.caption("Nenhum código dos itens selecionados encontrado em tuss_valores.csv.")
+                    except Exception as _e_vref:
+                        st.caption(f"Não foi possível carregar tuss_valores.csv: {_e_vref}")
+
+                    if n_baixa_conf > 0:
+                        st.caption(f"⚠️ {n_baixa_conf} item(ns) com confiança Baixa ou Sem dados — células destacadas em amarelo no XLSX.")
+                    estimar_valor = st.checkbox(
+                        "Incluir coluna VALOR no formulário XLSX",
+                        value=True,
+                        key="cob_estimar",
+                        help=(
+                            "Preenche a coluna VALOR do formulário com o Último Valor registrado por convênio "
+                            "(ou Média GERAL como fallback). Downgrade: diferença entre código esperado e pago. "
+                            "Ausente/Não Faturado: valor integral do código ausente."
+                        ),
+                    )
 
                 # ── Seção 5: Gerar XLSX ───────────────────────────────────────
                 st.subheader("5. Gerar formulário")
